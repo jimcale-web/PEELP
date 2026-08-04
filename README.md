@@ -9,7 +9,7 @@ PEELP is a full-stack LMS project scaffold with:
 This repository is currently in **early scaffold stage**:
 - Backend has a working Express server and health endpoint.
 - Frontend has a minimal React app and shared API/types scaffolding.
-- Prisma files exist but are placeholders and not wired into scripts yet.
+- Backend is wired to PostgreSQL through Prisma (schema + scripts + startup DB connection check).
 
 ## Repository Structure
 

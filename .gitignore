@@ -29,9 +29,7 @@ dist-ssr
 .env.*.local
 
 # Prisma
-prisma/migrations/
 .prisma/
 
 # OS
 Thumbs.db
-

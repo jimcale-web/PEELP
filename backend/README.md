@@ -30,6 +30,11 @@ Defined in [package.json](/C:/Users/hp/PEELP/backend/package.json):
 - `npm run start` - run compiled backend (`node dist/index.js`)
 - `npm run lint` - lint `src/**/*.ts`
 - `npm run format` - format `src/**/*.ts`
+- `npm run prisma:generate` - generate Prisma client
+- `npm run prisma:migrate` - create/apply development migrations
+- `npm run prisma:migrate:deploy` - apply migrations in non-dev environments
+- `npm run prisma:studio` - open Prisma Studio
+- `npm run prisma:seed` - seed database records
 
 ## Run Backend
 
@@ -59,4 +64,5 @@ Additional variables in template are for planned integrations.
 
 ## Prisma Status
 
-Files exist in [backend/prisma/](/C:/Users/hp/PEELP/backend/prisma), but schema/seed are currently placeholders and no Prisma npm scripts are configured yet.
+Prisma is configured for PostgreSQL in [schema.prisma](/C:/Users/hp/PEELP/backend/prisma/schema.prisma), with a shared client in [prisma.ts](/C:/Users/hp/PEELP/backend/src/lib/prisma.ts).  
+On backend startup, [startServer](/C:/Users/hp/PEELP/backend/src/index.ts:36) verifies DB connectivity before serving traffic.

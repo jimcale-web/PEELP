@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { prisma } from './lib/prisma';
 
 dotenv.config();
 
@@ -32,17 +33,47 @@ app.use((_err: unknown, _req: express.Request, res: express.Response, _next: exp
   res.status(500).json({ error: 'Internal server error' });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📚 PEELP Backend - Online Learning Management System`);
-});
-
-server.on('error', (error: NodeJS.ErrnoException) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use. Stop the existing process or set PORT to another value.`);
+async function startServer(): Promise<void> {
+  try {
+    await prisma.$connect();
+    console.log('✅ Connected to PostgreSQL via Prisma');
+  } catch (error) {
+    console.error('❌ Failed to connect to PostgreSQL via Prisma:', error);
     process.exit(1);
   }
 
-  console.error('❌ Failed to start server:', error);
-  process.exit(1);
-});
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📚 PEELP Backend - Online Learning Management System`);
+  });
+
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use. Stop the existing process or set PORT to another value.`);
+      process.exit(1);
+    }
+
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  });
+
+  const shutdown = (signal: string): void => {
+    console.log(`\n${signal} received. Shutting down...`);
+
+    server.close(async (error) => {
+      if (error) {
+        console.error('❌ Error during HTTP server shutdown:', error);
+        process.exit(1);
+      }
+
+      await prisma.$disconnect();
+      console.log('✅ Prisma connection closed');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+}
+
+void startServer();
