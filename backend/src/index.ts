@@ -15,9 +15,13 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
-app.all('/api/auth/*', toNodeHandler(auth));
+
+// Parse request bodies BEFORE auth handler
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Auth handler
+app.all('/api/auth/*', toNodeHandler(auth));
 
 // Health check route
 app.get('/api/health', (_req, res) => {

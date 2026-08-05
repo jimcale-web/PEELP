@@ -1,62 +1,68 @@
 import { PrismaClient } from '@prisma/client';
-import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'password123';
+  const adminName = 'Admin User';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
 
-  // Hash the password using bcrypt
-  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  try {
+    // Delete existing admin user if exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
 
-  // Generate a unique ID for the user
-  const userId = crypto.randomUUID();
-  const accountId = crypto.randomUUID();
+    if (existingUser) {
+      await prisma.account.deleteMany({
+        where: { userId: existingUser.id },
+      });
+      await prisma.user.delete({
+        where: { email: adminEmail },
+      });
+      console.log('✅ Deleted existing admin user');
+    }
 
-  // Upsert the admin user
-  const user = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { name: 'Admin User', role: 'ADMIN' },
-    create: {
-      id: userId,
-      email: adminEmail,
-      name: 'Admin User',
-      role: 'ADMIN',
-      emailVerified: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  });
+    // Use the sign-up endpoint to create the admin user
+    const response = await fetch(`${backendUrl}/api/auth/sign-up/email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': backendUrl,
+      },
+      body: JSON.stringify({
+        email: adminEmail,
+        password: adminPassword,
+        name: adminName,
+      }),
+    });
 
-  // Create or update the account with the hashed password
-  await prisma.account.upsert({
-    where: { id: accountId },
-    update: {
-      password: hashedPassword,
-    },
-    create: {
-      id: accountId,
-      accountId: 'email',
-      providerId: 'email',
-      userId: user.id,
-      password: hashedPassword,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  });
+    const data = await response.json() as { user?: { id: string } };
 
-  console.log(`✅ Seed complete: Admin user created`);
-  console.log(`   Email: ${adminEmail}`);
-  console.log(`   Password: ${adminPassword}`);
+    if (data.user) {
+      // Update the role to ADMIN
+      await prisma.user.update({
+        where: { id: data.user.id },
+        data: { role: 'ADMIN', emailVerified: true },
+      });
+
+      console.log(`✅ Seed complete: Admin user created`);
+      console.log(`   Email: ${adminEmail}`);
+      console.log(`   Password: ${adminPassword}`);
+      console.log(`   ID: ${data.user.id}`);
+    } else {
+      console.error('Failed to create admin user:', data);
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error('Seed failed:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-main()
-  .catch((error) => {
-    console.error('Seed failed:', error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main();
+
+
