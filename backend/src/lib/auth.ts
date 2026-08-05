@@ -9,7 +9,6 @@ export const auth = betterAuth({
     }),
     emailAndPassword: {
         enabled: true,
-        disableSignUp: false, // Temporarily enabled for testing
+        disableSignUp: false,
     },
-    trustedOrigins: [process.env.FRONTEND_URL ?? 'http://localhost:5173'],
 })

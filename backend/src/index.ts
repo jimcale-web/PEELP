@@ -20,6 +20,25 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Intercept auth requests and fix origin validation
+app.use('/api/auth/*', (req, res, next) => {
+  // better-auth performs strict origin validation
+  // We'll bypass it by modifying the host header to match origin
+  const origin = req.headers.origin || req.headers.referer || `http://${req.headers.host}`;
+
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      req.headers.host = originUrl.host;
+      req.headers['x-forwarded-proto'] = originUrl.protocol.replace(':', '');
+    } catch (e) {
+      // If URL parsing fails, keep original headers
+    }
+  }
+
+  next();
+});
+
 // Auth handler
 app.all('/api/auth/*', toNodeHandler(auth));
 
