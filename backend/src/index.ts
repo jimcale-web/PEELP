@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { prisma } from './lib/prisma';
+import { toNodeHandler } from 'better-auth/node';
+import { prisma } from './lib/prisma.js';
+import { auth } from './lib/auth.js';
 
 dotenv.config();
 
@@ -13,6 +15,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
+app.all('/api/auth/*', toNodeHandler(auth));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

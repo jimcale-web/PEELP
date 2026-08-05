@@ -2,6 +2,7 @@
   "name": "peelp-backend",
   "version": "1.0.0",
   "description": "PEELP LMS Backend - Node.js + Express + TypeScript",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "node dist/index.js",
@@ -28,6 +29,8 @@
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "better-auth": "^1.6.25",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.2"
