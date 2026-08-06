@@ -11,4 +11,4 @@ export const auth = betterAuth({
         enabled: true,
         disableSignUp: false,
     },
-})
+});
