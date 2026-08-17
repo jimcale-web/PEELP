@@ -9,7 +9,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     if (!session) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
-    req.session = session;
+    req.session = session.session;
     req.user = session.user;
     next();
 };

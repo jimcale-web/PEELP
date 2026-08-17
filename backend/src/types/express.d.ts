@@ -6,7 +6,7 @@ declare global {
     namespace Express {
         interface Request {
             user?: BetterAuthSession['user'];
-            session?: BetterAuthSession;
+            session?: BetterAuthSession['session'];
         }
     }
 }
