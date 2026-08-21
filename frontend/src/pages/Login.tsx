@@ -1,31 +1,40 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/Login.css';
 
-export default function Login() {
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+type LoginFormData = z.infer<typeof loginSchema>;
+
+export default function Login() {
+  const [serverError, setServerError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
 
+  const onSubmit = async (data: LoginFormData) => {
+    setServerError('');
     try {
-      await login(email, password);
+      await login(data.email, data.password);
       navigate('/');
     } catch (err) {
-      setError(
+      setServerError(
         err instanceof Error ? err.message : 'Login failed. Please try again.'
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -35,17 +44,18 @@ export default function Login() {
         <h1>PEELP</h1>
         <h2>Sign In</h2>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
-              type="email"
+              type="text"
               id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
+              disabled={isSubmitting}
+              {...register('email')}
             />
+            {errors.email && (
+              <span className="field-error">{errors.email.message}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -53,24 +63,23 @@ export default function Login() {
             <input
               type="password"
               id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
+              disabled={isSubmitting}
+              {...register('password')}
             />
+            {errors.password && (
+              <span className="field-error">{errors.password.message}</span>
+            )}
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {serverError && <div className="error-message">{serverError}</div>}
 
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : 'Sign In'}
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         <div className="login-footer">
-          <p>
-            Demo credentials: admin@example.com / password123
-          </p>
+          <p>Contact your administrator if you need access.</p>
         </div>
       </div>
     </div>

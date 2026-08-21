@@ -67,6 +67,13 @@
   cursor: not-allowed;
 }
 
+.field-error {
+  display: block;
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 .error-message {
   color: #dc3545;
   font-size: 14px;

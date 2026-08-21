@@ -32,7 +32,11 @@
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.2",
+    "express-rate-limit": "^8.6.2",
     "pg": "^8.22.0"
+  },
+  "overrides": {
+    "deepmerge-ts": ">=8.0.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

@@ -11,7 +11,10 @@
     "build:backend": "cd backend && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "lint": "cd backend && npm run lint && cd ../frontend && npm run lint",
-    "format": "cd backend && npm run format && cd ../frontend && npm run format"
+    "format": "cd backend && npm run format && cd ../frontend && npm run format",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report e2e/playwright-report"
   },
   "keywords": [
     "lms",
@@ -24,7 +27,13 @@
   "author": "PEELP Team",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.23.0",
+    "typescript": "^7.0.2"
   }
 }
-

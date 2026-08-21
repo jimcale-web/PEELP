@@ -5,8 +5,13 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'password123';
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    console.error('❌ ADMIN_EMAIL and ADMIN_PASSWORD environment variables must be set before seeding.');
+    process.exit(1);
+  }
   const adminName = 'Admin User';
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
 

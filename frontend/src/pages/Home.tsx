@@ -17,15 +17,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="features">
-          <h2>Features</h2>
-          <ul>
-            <li>📚 Access courses and learning materials</li>
-            <li>📊 Track your progress</li>
-            <li>✅ Complete quizzes and assignments</li>
-            <li>📜 Earn certificates</li>
-          </ul>
-        </div>
+
       </div>
     </div>
   );
