@@ -22,22 +22,28 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.ts',
 
   projects: [
+    // The setup project logs in once and saves auth cookies to a file.
+    // The chromium project depends on it so the auth file exists before tests run.
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
     },
   ],
 
   webServer: [
     {
       // Backend: build then start with the test env
-      command: 'npm run build --prefix backend && cross-env NODE_ENV=test node backend/dist/index.js',
+      command: 'npm run build --prefix backend && cross-env NODE_ENV=test DOTENV_CONFIG_PATH=backend/.env.test node backend/dist/index.js',
       url: `http://localhost:${E2E_PORT_BACKEND}/api/health`,
       reuseExistingServer: false,
       timeout: 60_000,
       env: {
         PORT: String(E2E_PORT_BACKEND),
-        DOTENV_CONFIG_PATH: path.resolve(__dirname, 'backend/.env.test'),
       },
     },
     {

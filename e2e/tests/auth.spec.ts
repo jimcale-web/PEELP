@@ -9,6 +9,8 @@ test.describe('Login page', () => {
     await page.goto(LOGIN_URL);
   });
 
+  // ─── Rendering ──────────────────────────────────────────────────────────────
+
   test('renders the login form', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'PEELP' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
@@ -17,6 +19,12 @@ test.describe('Login page', () => {
     await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();
     await expect(page.getByText('Contact your administrator if you need access.')).toBeVisible();
   });
+
+  test('navbar is not rendered on the login page', async ({ page }) => {
+    await expect(page.locator('nav.navbar')).not.toBeAttached();
+  });
+
+  // ─── Client-side validation ──────────────────────────────────────────────────
 
   test('shows validation error for invalid email format', async ({ page }) => {
     await page.getByLabel('Email').fill('not-an-email');
@@ -40,29 +48,27 @@ test.describe('Login page', () => {
     await expect(page.getByText('Password is required')).toBeVisible();
   });
 
-  test('shows server error for wrong credentials', async ({ page }) => {
-    // Mock a 400 to avoid the 401 axios interceptor redirect and test error display
+  test('whitespace-only email fails email validation', async ({ page }) => {
+    await page.getByLabel('Email').fill('   ');
+    await page.getByLabel('Password').fill('somepassword');
+    await page.getByRole('button', { name: 'Sign In' }).click();
+
+    await expect(page.getByText('Invalid email address')).toBeVisible();
+  });
+
+  // ─── Submission behaviour ────────────────────────────────────────────────────
+
+  test('pressing Enter on the password field submits the form', async ({ page }) => {
+    // Mock so we can detect the submission without a real backend call
     await page.route('**/api/auth/sign-in/email', (route) =>
       route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'Invalid email or password' }) })
     );
 
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill('wrongpassword');
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByLabel('Password').press('Enter');
 
-    await expect(page.locator('.error-message')).toBeVisible();
-  });
-
-  test('shows server error for non-existent user', async ({ page }) => {
-    // Mock a 400 to avoid the 401 axios interceptor redirect and test error display
-    await page.route('**/api/auth/sign-in/email', (route) =>
-      route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'Invalid email or password' }) })
-    );
-
-    await page.getByLabel('Email').fill('nobody@example.com');
-    await page.getByLabel('Password').fill('password123');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
+    // The server error (mocked 400) proves the request was submitted via keyboard
     await expect(page.locator('.error-message')).toBeVisible();
   });
 
@@ -84,17 +90,58 @@ test.describe('Login page', () => {
     await page.getByLabel('Password').fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Wait until the route handler is running (resolveRoute is assigned)
     await handlerReady;
 
-    // While the request is paused the button text changes and inputs are disabled
     await expect(page.getByRole('button', { name: 'Signing in...' })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeDisabled();
     await expect(page.getByLabel('Password')).toBeDisabled();
 
-    // Release the request so the test can clean up
     resolveRoute();
   });
+
+  // ─── Server-side errors ──────────────────────────────────────────────────────
+
+  test('shows server error for wrong credentials', async ({ page }) => {
+    await page.route('**/api/auth/sign-in/email', (route) =>
+      route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'Invalid email or password' }) })
+    );
+
+    await page.getByLabel('Email').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill('wrongpassword');
+    await page.getByRole('button', { name: 'Sign In' }).click();
+
+    await expect(page.locator('.error-message')).toBeVisible();
+  });
+
+  test('shows server error for non-existent user', async ({ page }) => {
+    await page.route('**/api/auth/sign-in/email', (route) =>
+      route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'Invalid email or password' }) })
+    );
+
+    await page.getByLabel('Email').fill('nobody@example.com');
+    await page.getByLabel('Password').fill('password123');
+    await page.getByRole('button', { name: 'Sign In' }).click();
+
+    await expect(page.locator('.error-message')).toBeVisible();
+  });
+
+  test('shows error message for rate-limited login (429)', async ({ page }) => {
+    await page.route('**/api/auth/sign-in/email', (route) =>
+      route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Too many login attempts. Please try again later.' }),
+      })
+    );
+
+    await page.getByLabel('Email').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+
+    await expect(page.locator('.error-message')).toBeVisible();
+  });
+
+  // ─── Success flow ────────────────────────────────────────────────────────────
 
   test('redirects to home after successful login', async ({ page }) => {
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
@@ -106,8 +153,6 @@ test.describe('Login page', () => {
   });
 
   test('clears server error when resubmitting', async ({ page }) => {
-    // First submit: mock a 400 so the error message shows reliably without 401 redirect.
-    // Subsequent requests pass through to the real backend.
     let firstRequest = true;
     await page.route('**/api/auth/sign-in/email', async (route) => {
       if (firstRequest) {
@@ -123,7 +168,6 @@ test.describe('Login page', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page.locator('.error-message')).toBeVisible();
 
-    // Second submit with correct credentials — the error clears and we navigate home
     await page.getByLabel('Password').fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 

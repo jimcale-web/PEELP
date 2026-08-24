@@ -10,10 +10,12 @@ export const auth = betterAuth({
         provider: 'postgresql',
     }),
     rateLimit: {
-        enabled: true,
-        window: 15 * 60,   // 15-minute window
-        max: 10,            // max 10 attempts per window per IP
-        storage: "memory",  // switch to "database" if running multiple instances
+        // Disable in test mode — tests make many get-session calls and a separate
+        // express-rate-limit already guards sign-in in production.
+        enabled: process.env.NODE_ENV !== 'test',
+        window: 15 * 60,
+        max: 10,
+        storage: "memory",
     },
     emailAndPassword: {
         enabled: true,
