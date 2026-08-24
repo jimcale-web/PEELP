@@ -31,7 +31,7 @@ export default defineConfig({
   webServer: [
     {
       // Backend: build then start with the test env
-      command: 'npm run build --prefix backend && cross-env NODE_ENV=test DOTENV_CONFIG_PATH=.env.test node backend/dist/index.js',
+      command: 'npm run build --prefix backend && cross-env NODE_ENV=test node backend/dist/index.js',
       url: `http://localhost:${E2E_PORT_BACKEND}/api/health`,
       reuseExistingServer: false,
       timeout: 60_000,
@@ -41,8 +41,8 @@ export default defineConfig({
       },
     },
     {
-      // Frontend: preview build pointed at the test backend
-      command: `cross-env VITE_API_URL=http://localhost:${E2E_PORT_BACKEND} npm run build --prefix frontend && npm run preview --prefix frontend -- --port ${E2E_PORT_FRONTEND}`,
+      // Frontend: preview build pointed at the test backend (include /api so axios baseURL is correct)
+      command: `cross-env VITE_API_URL=http://localhost:${E2E_PORT_BACKEND}/api npm run build --prefix frontend && npm run preview --prefix frontend -- --port ${E2E_PORT_FRONTEND}`,
       url: `http://localhost:${E2E_PORT_FRONTEND}`,
       reuseExistingServer: false,
       timeout: 60_000,
