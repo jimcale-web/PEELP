@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
-import api from '../../services/api';
+import { useState } from 'react';
+import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import '../../styles/UserList.css';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface UserRow {
   id: string;
@@ -12,26 +15,21 @@ interface UserRow {
   deletedAt: string | null;
 }
 
+async function fetchUsers(): Promise<UserRow[]> {
+  const res = await axios.get<{ users: UserRow[] }>(`${API_URL}/admin/users`, {
+    withCredentials: true,
+  });
+  return res.data.users;
+}
+
 export default function UserList() {
-  const [users, setUsers] = useState<UserRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'' | 'ADMIN' | 'INSTRUCTOR' | 'STUDENT'>('');
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await api.get<{ users: UserRow[] }>('/admin/users');
-        setUsers(res.data.users);
-      } catch {
-        setError('Failed to load users.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUsers();
-  }, []);
+  const { data: users = [], isLoading, isError } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: fetchUsers,
+  });
 
   const filtered = users.filter((u) => {
     const matchesSearch =
@@ -76,9 +74,9 @@ export default function UserList() {
         </div>
 
         {isLoading && <p className="state-message">Loading users…</p>}
-        {error && <p className="state-message error">{error}</p>}
+        {isError && <p className="state-message error">Failed to load users.</p>}
 
-        {!isLoading && !error && (
+        {!isLoading && !isError && (
           <div className="table-wrapper">
             <table className="users-table">
               <thead>
