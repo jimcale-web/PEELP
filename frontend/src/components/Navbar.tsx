@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/Navbar.css';
 
@@ -34,6 +34,9 @@ export default function Navbar() {
 
         <div className="navbar-menu">
           <a href="/" className="nav-link">Home</a>
+          {user?.role === 'ADMIN' && (
+            <Link to="/admin/users" className="nav-link">Users</Link>
+          )}
         </div>
 
         {user && (

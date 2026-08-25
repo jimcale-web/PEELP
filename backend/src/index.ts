@@ -5,6 +5,10 @@ import rateLimit from 'express-rate-limit';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth.js';
 import { requireAuth } from './middleware/require-auth.js';
+import { requireAdmin } from './middleware/require-admin.js';
+import { errorHandler } from './middleware/error-handler.js';
+import { asyncHandler } from './lib/async-handler.js';
+import { prisma } from './lib/prisma.js';
 
 
 const app = express();
@@ -42,6 +46,25 @@ app.get('/api/health', (_req, res) => {
 app.get("/api/me", requireAuth, (req, res) => {
   res.json({ user: req.user, session: req.session });
 });
+
+// Admin: list all users
+app.get('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (_req, res) => {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      createdAt: true,
+      deletedAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ users });
+}));
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(` Server running on http://localhost:${PORT}`);

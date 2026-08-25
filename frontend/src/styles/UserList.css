@@ -1,0 +1,195 @@
+/* User List Page */
+.user-list-container {
+  min-height: calc(100vh - 70px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.user-list-card {
+  background: white;
+  border-radius: 10px;
+  padding: 40px;
+  width: 100%;
+  max-width: 1100px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.user-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.user-list-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.user-list-header p {
+  color: #888;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Filters */
+.user-list-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-input,
+.role-select {
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background: #fafafa;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input:focus,
+.role-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  background: white;
+}
+
+/* Table */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.users-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  color: #555;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  white-space: nowrap;
+}
+
+.users-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+  vertical-align: middle;
+}
+
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.users-table tbody tr:hover td {
+  background: #fafbff;
+}
+
+.row-deleted td {
+  opacity: 0.55;
+}
+
+.email-cell {
+  color: #667eea;
+}
+
+/* Pill badges */
+.role-pill,
+.verified-pill,
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-pill.role-admin {
+  background: #fde8e8;
+  color: #c0392b;
+}
+
+.role-pill.role-instructor {
+  background: #e8f4fd;
+  color: #2980b9;
+}
+
+.role-pill.role-student {
+  background: #e8fdf0;
+  color: #27ae60;
+}
+
+.verified-pill.verified {
+  background: #e8fdf0;
+  color: #27ae60;
+}
+
+.verified-pill.unverified {
+  background: #fdf8e8;
+  color: #d68910;
+}
+
+.status-pill.active {
+  background: #e8fdf0;
+  color: #27ae60;
+}
+
+.status-pill.deactivated {
+  background: #f5f5f5;
+  color: #999;
+}
+
+/* States */
+.state-message {
+  text-align: center;
+  color: #888;
+  padding: 40px 0;
+  font-size: 15px;
+}
+
+.state-message.error {
+  color: #c0392b;
+}
+
+.no-results {
+  text-align: center;
+  color: #aaa;
+  padding: 30px 0 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .user-list-card {
+    padding: 24px 16px;
+  }
+
+  .user-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .user-list-header h1 {
+    font-size: 20px;
+  }
+}
