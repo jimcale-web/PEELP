@@ -50,10 +50,10 @@ export default function UserList() {
       <div className="user-list-card">
         <div className="user-list-header">
           <h1>User Management</h1>
-          <p>{users.length} total users</p>
+          <p>{isLoading ? '' : `${users.length} total users`}</p>
         </div>
 
-        <div className="user-list-filters">
+        <div className="user-list-filters" style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
           <input
             type="text"
             className="search-input"
@@ -73,7 +73,34 @@ export default function UserList() {
           </select>
         </div>
 
-        {isLoading && <p className="state-message">Loading users…</p>}
+        {isLoading && (
+          <div className="table-wrapper">
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Verified</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i}>
+                    <td><span className="skeleton skeleton-text" style={{ width: '120px' }} /></td>
+                    <td><span className="skeleton skeleton-text" style={{ width: '180px' }} /></td>
+                    <td><span className="skeleton skeleton-pill" style={{ width: '70px' }} /></td>
+                    <td><span className="skeleton skeleton-pill" style={{ width: '40px' }} /></td>
+                    <td><span className="skeleton skeleton-pill" style={{ width: '65px' }} /></td>
+                    <td><span className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         {isError && <p className="state-message error">Failed to load users.</p>}
 
         {!isLoading && !isError && (
