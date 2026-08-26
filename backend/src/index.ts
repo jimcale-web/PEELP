@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth.js';
+import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { requireAuth } from './middleware/require-auth.js';
 import { requireAdmin } from './middleware/require-admin.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -66,10 +67,8 @@ app.post('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (req,
 
   const { name, email, password, role } = parsed.data;
 
-  // Use bcrypt + prisma directly to create the user so we avoid better-auth
-  // routing/response-object quirks when calling auth.api from inside the server.
-  const { hashSync } = await import('bcryptjs');
-  const hashedPassword = hashSync(password, 10);
+  // Use better-auth's own scrypt hasher so the hash is compatible with sign-in
+  const hashedPassword = await hashPassword(password);
   const { randomUUID } = await import('crypto');
   const now = new Date();
   const userId = randomUUID();
@@ -130,6 +129,128 @@ app.get('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (_req,
     orderBy: { createdAt: 'desc' },
   });
   res.json({ users });
+}));
+
+// Admin: update a user
+const updateUserSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+  email: z.string().email('Valid email is required.'),
+  newPassword: z
+    .string()
+    .refine((v) => v === '' || v.length >= 8, 'New password must be at least 8 characters.')
+    .optional()
+    .or(z.literal('')),
+  role: z.enum(['ADMIN', 'INSTRUCTOR', 'STUDENT']),
+});
+
+app.patch('/api/admin/users/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = updateUserSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { id } = req.params;
+  const { name, email, newPassword, role } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: 'User not found.' });
+    return;
+  }
+
+  // Check for email conflict with another user
+  const emailConflict = await prisma.user.findFirst({ where: { email, NOT: { id } } });
+  if (emailConflict) {
+    res.status(409).json({ error: 'A user with that email already exists.' });
+    return;
+  }
+
+  const now = new Date();
+
+  // Update password only when a non-empty value is provided;
+  // always re-hash with better-auth's scrypt so sign-in works regardless
+  // of what algorithm the old hash used.
+  if (newPassword) {
+    const account = await prisma.account.findFirst({
+      where: { userId: id, providerId: 'credential' },
+    });
+
+    if (!account) {
+      res.status(400).json({ error: 'No credential account found for this user.' });
+      return;
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { password: hashedPassword, updatedAt: now },
+    });
+  }
+
+  await prisma.user.update({
+    where: { id },
+    data: { name, email, role, updatedAt: now },
+  });
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      createdAt: true,
+      deletedAt: true,
+    },
+  });
+
+  res.json({ user });
+}));
+
+// Admin: delete a user
+// - ADMIN users cannot be deleted
+// - INSTRUCTOR: soft-deleted (deletedAt set)
+// - STUDENT: hard-deleted (cascades to accounts/sessions)
+app.delete('/api/admin/users/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({
+      error: `No user with ID "${id}" exists. They may have already been deleted — refresh the list and try again.`,
+    });
+    return;
+  }
+
+  if (existing.role === 'ADMIN') {
+    res.status(403).json({
+      error: `"${existing.name}" is an Admin account. Admin accounts cannot be deleted for safety reasons.`,
+    });
+    return;
+  }
+
+  if (existing.deletedAt) {
+    res.status(409).json({
+      error: `"${existing.name}" has already been deactivated (on ${new Date(existing.deletedAt).toLocaleDateString()}).`,
+    });
+    return;
+  }
+
+  if (existing.role === 'INSTRUCTOR') {
+    await prisma.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+    res.status(200).json({ deleted: 'soft', name: existing.name });
+    return;
+  }
+
+  // STUDENT — hard delete (Prisma cascade removes accounts & sessions)
+  await prisma.user.delete({ where: { id } });
+  res.status(200).json({ deleted: 'hard', name: existing.name });
 }));
 
 app.use(errorHandler);

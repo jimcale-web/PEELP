@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import pg from 'pg';
 
 export default async function globalTeardown() {
-  dotenv.config({ path: path.resolve(__dirname, '../backend/.env.test') });
+  dotenv.config({ path: path.resolve(__dirname, '../backend/.env.test'), override: true });
 
   const testDbUrl = process.env.DATABASE_URL!;
 

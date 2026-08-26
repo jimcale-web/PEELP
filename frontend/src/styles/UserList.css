@@ -388,3 +388,124 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Edit button in table rows */
+.actions-cell {
+  white-space: nowrap;
+  text-align: right;
+  padding-right: 8px !important;
+}
+
+.btn-edit-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: white;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-edit-user:hover {
+  background: #f0f0ff;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.btn-delete-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid #fbc9c9;
+  border-radius: 6px;
+  background: white;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin-left: 6px;
+}
+
+.btn-delete-user:hover {
+  background: #fdf0f0;
+  border-color: #c0392b;
+}
+
+/* Narrow confirmation modal */
+.modal-card--narrow {
+  max-width: 380px;
+}
+
+.delete-confirm-body {
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.btn-delete {
+  padding: 9px 18px;
+  background: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-delete:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.btn-deactivate {
+  padding: 9px 18px;
+  background: #e67e22;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-deactivate:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.btn-delete:disabled,
+.btn-deactivate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Hint text in modal label */
+.field-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #999;
+  margin-left: 4px;
+}
+
+/* Password change section in edit modal */
+.modal-password-section {
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
+.modal-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin: 0 0 14px;
+}

@@ -21,8 +21,10 @@ async function hashPasswordForBetterAuth(password: string): Promise<string> {
 }
 
 export default async function globalSetup() {
-  // Load test env so DATABASE_URL points to peelp_test
-  dotenv.config({ path: path.resolve(__dirname, '../backend/.env.test') });
+  // Load test env so DATABASE_URL points to peelp_test.
+  // override:true ensures a host-level DATABASE_URL (e.g. peelp_dev from a
+  // developer's shell) never takes precedence over the dedicated test DB.
+  dotenv.config({ path: path.resolve(__dirname, '../backend/.env.test'), override: true });
 
   const testDbUrl = process.env.DATABASE_URL!;
 

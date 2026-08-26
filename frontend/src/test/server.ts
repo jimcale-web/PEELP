@@ -2,6 +2,8 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 
 export const USERS_URL = 'http://localhost:5000/api/admin/users';
+export const USER_URL = (id: string) => `http://localhost:5000/api/admin/users/${id}`;
+export const DELETE_USER_URL = USER_URL; // DELETE uses the same URL pattern
 
 export const mockUsers = [
   {

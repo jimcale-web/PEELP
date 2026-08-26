@@ -223,6 +223,45 @@ describe('UserList', () => {
     });
   });
 
+  describe('Delete / Deactivate buttons', () => {
+    beforeEach(async () => {
+      renderUserList();
+      await screen.findByText('Alice Admin');
+    });
+
+    it('does not show a delete button for admin rows', () => {
+      const aliceRow = screen.getByText('Alice Admin').closest('tr')!;
+      expect(aliceRow.querySelector('[aria-label^="Delete"]')).toBeNull();
+    });
+
+    it('shows a "Delete" button for student rows', () => {
+      expect(screen.getByRole('button', { name: /delete carol student/i })).toBeInTheDocument();
+    });
+
+    it('shows a "Deactivate" button for instructor rows', () => {
+      expect(screen.getByRole('button', { name: /delete bob instructor/i })).toBeInTheDocument();
+    });
+
+    it('opens the confirmation modal when the delete button is clicked', async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /delete carol student/i }));
+      expect(screen.getByRole('heading', { name: /delete user/i })).toBeInTheDocument();
+    });
+
+    it('closes the confirmation modal when Cancel is clicked', async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /delete carol student/i }));
+      await user.click(screen.getByRole('button', { name: /cancel/i }));
+      expect(screen.queryByRole('heading', { name: /delete user/i })).not.toBeInTheDocument();
+    });
+
+    it('does not show a delete button for already-deactivated rows', () => {
+      // Dave Deleted has deletedAt set — no delete button should appear
+      const daveRow = screen.getByText('Dave Deleted').closest('tr')!;
+      expect(daveRow.querySelector('button[aria-label^="Delete"]')).toBeNull();
+    });
+  });
+
   describe('error state', () => {
     it('shows an error message when the request fails', async () => {
       server.use(

@@ -3,18 +3,13 @@ import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import '../../styles/UserList.css';
 import CreateUserModal from '../../components/Admin/CreateUserModal';
+import EditUserModal from '../../components/Admin/EditUserModal';
+import DeleteUserModal from '../../components/Admin/DeleteUserModal';
+import type { UserRow } from '../../components/Admin/EditUserModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-interface UserRow {
-  id: string;
-  name: string;
-  email: string;
-  role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
-  emailVerified: boolean;
-  createdAt: string;
-  deletedAt: string | null;
-}
+
 
 async function fetchUsers(): Promise<UserRow[]> {
   const res = await axios.get<{ users: UserRow[] }>(`${API_URL}/admin/users`, {
@@ -27,6 +22,8 @@ export default function UserList() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'' | 'ADMIN' | 'INSTRUCTOR' | 'STUDENT'>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
 
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['admin', 'users'],
@@ -62,6 +59,8 @@ export default function UserList() {
         </div>
 
         {showCreateModal && <CreateUserModal onClose={() => setShowCreateModal(false)} />}
+        {editingUser && <EditUserModal user={editingUser} onClose={() => setEditingUser(null)} />}
+        {deletingUser && <DeleteUserModal user={deletingUser} onClose={() => setDeletingUser(null)} />}
 
         <div className="user-list-filters" style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
           <input
@@ -94,6 +93,7 @@ export default function UserList() {
                   <th>Verified</th>
                   <th>Status</th>
                   <th>Joined</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -105,6 +105,7 @@ export default function UserList() {
                     <td><span className="skeleton skeleton-pill" style={{ width: '40px' }} /></td>
                     <td><span className="skeleton skeleton-pill" style={{ width: '65px' }} /></td>
                     <td><span className="skeleton skeleton-text" style={{ width: '80px' }} /></td>
+                    <td></td>
                   </tr>
                 ))}
               </tbody>
@@ -124,12 +125,13 @@ export default function UserList() {
                   <th>Verified</th>
                   <th>Status</th>
                   <th>Joined</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="no-results">No users match your filters.</td>
+                    <td colSpan={7} className="no-results">No users match your filters.</td>
                   </tr>
                 ) : (
                   filtered.map((u) => (
@@ -152,6 +154,34 @@ export default function UserList() {
                         </span>
                       </td>
                       <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="actions-cell">
+                        <button
+                          className="btn-edit-user"
+                          onClick={() => setEditingUser(u)}
+                          aria-label={`Edit ${u.name}`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                          Edit
+                        </button>
+                        {u.role !== 'ADMIN' && !u.deletedAt && (
+                          <button
+                            className="btn-delete-user"
+                            onClick={() => setDeletingUser(u)}
+                            aria-label={`Delete ${u.name}`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                            </svg>
+                            {u.role === 'INSTRUCTOR' ? 'Deactivate' : 'Delete'}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

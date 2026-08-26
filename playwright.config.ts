@@ -1,5 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
+import dotenv from 'dotenv';
+
+// Load test env first so DATABASE_URL and other vars are available for the
+// webServer env block below. override:true ensures host-level env vars (e.g. a
+// developer's shell DATABASE_URL pointing at peelp_dev) never bleed through.
+dotenv.config({ path: path.resolve(__dirname, 'backend/.env.test'), override: true });
 
 const E2E_PORT_BACKEND = 5001;
 const E2E_PORT_FRONTEND = 5174;
@@ -37,13 +43,24 @@ export default defineConfig({
 
   webServer: [
     {
-      // Backend: build then start with the test env
-      command: 'npm run build --prefix backend && cross-env NODE_ENV=test DOTENV_CONFIG_PATH=backend/.env.test node backend/dist/index.js',
+      // Backend: build then start with the test env.
+      // All critical env vars are passed explicitly via `env` so they override
+      // anything already present in the host environment (avoids the dev DB
+      // leaking in when DATABASE_URL is set in the developer's shell).
+      command: 'npm run build --prefix backend && node backend/dist/index.js',
       url: `http://localhost:${E2E_PORT_BACKEND}/api/health`,
       reuseExistingServer: false,
       timeout: 60_000,
       env: {
+        NODE_ENV: 'test',
         PORT: String(E2E_PORT_BACKEND),
+        DATABASE_URL: process.env.DATABASE_URL!,
+        BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET!,
+        BETTER_AUTH_URL: process.env.BETTER_AUTH_URL!,
+        FRONTEND_URL: process.env.FRONTEND_URL!,
+        ADMIN_EMAIL: process.env.ADMIN_EMAIL!,
+        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD!,
+        RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX!,
       },
     },
     {
