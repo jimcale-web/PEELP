@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import '../../styles/UserList.css';
+import CreateUserModal from '../../components/Admin/CreateUserModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -25,6 +26,7 @@ async function fetchUsers(): Promise<UserRow[]> {
 export default function UserList() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'' | 'ADMIN' | 'INSTRUCTOR' | 'STUDENT'>('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['admin', 'users'],
@@ -52,6 +54,14 @@ export default function UserList() {
           <h1>User Management</h1>
           <p>{isLoading ? '' : `${users.length} total users`}</p>
         </div>
+
+        <div className="user-list-toolbar">
+          <button className="btn-new-user" onClick={() => setShowCreateModal(true)}>
+            + New User
+          </button>
+        </div>
+
+        {showCreateModal && <CreateUserModal onClose={() => setShowCreateModal(false)} />}
 
         <div className="user-list-filters" style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
           <input

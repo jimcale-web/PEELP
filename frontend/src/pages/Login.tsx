@@ -41,7 +41,6 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>PEELP</h1>
         <h2>Sign In</h2>
 
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -50,6 +49,7 @@ export default function Login() {
             <input
               type="text"
               id="email"
+              className={errors.email ? 'input-error' : ''}
               disabled={isSubmitting}
               {...register('email')}
             />
@@ -63,6 +63,7 @@ export default function Login() {
             <input
               type="password"
               id="password"
+              className={errors.password ? 'input-error' : ''}
               disabled={isSubmitting}
               {...register('password')}
             />

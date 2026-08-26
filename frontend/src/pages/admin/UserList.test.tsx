@@ -173,6 +173,56 @@ describe('UserList', () => {
     });
   });
 
+  describe('Create User modal', () => {
+    beforeEach(async () => {
+      renderUserList();
+      await screen.findByText('Alice Admin');
+    });
+
+    it('does not show the modal before the button is clicked', () => {
+      expect(screen.queryByRole('heading', { name: /create new user/i })).not.toBeInTheDocument();
+    });
+
+    it('opens the modal when "+ New User" is clicked', async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /new user/i }));
+      expect(screen.getByRole('heading', { name: /create new user/i })).toBeInTheDocument();
+    });
+
+    it('closes the modal when clicking the backdrop', async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /new user/i }));
+      expect(screen.getByRole('heading', { name: /create new user/i })).toBeInTheDocument();
+
+      await user.click(document.querySelector('.modal-backdrop')!);
+      expect(screen.queryByRole('heading', { name: /create new user/i })).not.toBeInTheDocument();
+    });
+
+    it('closes the modal when pressing Escape', async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /new user/i }));
+      expect(screen.getByRole('heading', { name: /create new user/i })).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('heading', { name: /create new user/i })).not.toBeInTheDocument();
+    });
+
+    it('does not close the modal when clicking inside the modal card', async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /new user/i }));
+
+      await user.click(document.querySelector('.modal-card')!);
+      expect(screen.getByRole('heading', { name: /create new user/i })).toBeInTheDocument();
+    });
+
+    it('closes the modal when clicking the × close button', async () => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /new user/i }));
+      await user.click(screen.getByRole('button', { name: /close/i }));
+      expect(screen.queryByRole('heading', { name: /create new user/i })).not.toBeInTheDocument();
+    });
+  });
+
   describe('error state', () => {
     it('shows an error message when the request fails', async () => {
       server.use(
