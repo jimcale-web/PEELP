@@ -35,7 +35,7 @@ export default function Navbar() {
         <div className="navbar-menu">
           <a href="/" className="nav-link">Home</a>
           {user?.role === 'ADMIN' && (
-            <Link to="/admin/users" className="nav-link">Users</Link>
+            <Link to="/admin/users" className="nav-link">Admin</Link>
           )}
         </div>
 

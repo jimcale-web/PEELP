@@ -12,21 +12,35 @@ enum Role {
   STUDENT
 }
 
+enum AccessDuration {
+  MONTHLY
+  YEARLY
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean
-  image         String?
-  role          Role      @default(STUDENT)
-  city          String?
-  phoneNumber   String?
-  country       String?
-  deletedAt     DateTime?
-  createdAt     DateTime
-  updatedAt     DateTime
-  sessions      Session[]
-  accounts      Account[]
+  id               String          @id
+  name             String
+  email            String          @unique
+  emailVerified    Boolean
+  image            String?
+  role             Role            @default(STUDENT)
+  approvalStatus   ApprovalStatus  @default(PENDING)
+  city             String?
+  phoneNumber      String?
+  country          String?
+  accessDuration   AccessDuration?
+  accessExpiresAt  DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime
+  updatedAt        DateTime
+  sessions         Session[]
+  accounts         Account[]
 
   @@map("user")
 }

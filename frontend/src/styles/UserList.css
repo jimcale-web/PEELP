@@ -1,6 +1,6 @@
 /* User List Page */
 .user-list-container {
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - 70px - 47px);
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 40px 20px;
   display: flex;
@@ -484,6 +484,85 @@
 
 .btn-delete:disabled,
 .btn-deactivate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Pending badge in header */
+.pending-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Approval pill (approved / rejected) */
+.approval-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.approval-pill.approval-approved {
+  background: #e8fdf0;
+  color: #27ae60;
+}
+
+.approval-pill.approval-rejected {
+  background: #fde8e8;
+  color: #c0392b;
+}
+
+/* Inline approve / reject buttons */
+.approval-actions {
+  display: flex;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.btn-approve {
+  padding: 4px 10px;
+  border: 1px solid #a8e6c1;
+  border-radius: 6px;
+  background: white;
+  color: #27ae60;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #e8fdf0;
+  border-color: #27ae60;
+}
+
+.btn-reject {
+  padding: 4px 10px;
+  border: 1px solid #fbc9c9;
+  border-radius: 6px;
+  background: white;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background: #fde8e8;
+  border-color: #c0392b;
+}
+
+.btn-approve:disabled,
+.btn-reject:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

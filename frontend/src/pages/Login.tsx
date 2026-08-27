@@ -70,7 +70,7 @@ export default function Login() {
 
         {justRegistered && (
           <div className="success-message">
-            Account created! You can now sign in.
+            Account created! Your registration is pending admin approval before you can access the platform.
           </div>
         )}
 

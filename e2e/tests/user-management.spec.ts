@@ -61,7 +61,7 @@ test.describe('User Management page', () => {
     await expect(page.getByRole('heading', { name: 'User Management' })).toBeVisible();
     await expect(page.getByRole('button', { name: '+ New User' })).toBeVisible();
     await expect(page.getByPlaceholder('Search by name or email\u2026')).toBeVisible();
-    await expect(page.getByRole('combobox')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Filter by role' })).toBeVisible();
 
     await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Email' })).toBeVisible();
@@ -369,7 +369,7 @@ test.describe('Search and Filter', () => {
     const email = testEmail('filter-student');
     await createUser(page, { name: 'Filter Student', email });
 
-    await page.getByRole('combobox').selectOption('ADMIN');
+    await page.getByRole('combobox', { name: 'Filter by role' }).selectOption('ADMIN');
 
     await expect(page.getByRole('cell', { name: email, exact: true })).not.toBeVisible();
     await expect(page.getByRole('cell', { name: 'admin@example.com', exact: true })).toBeVisible();
@@ -381,10 +381,10 @@ test.describe('Search and Filter', () => {
     const email = testEmail('restore-filter');
     await createUser(page, { name: 'Restore Filter User', email });
 
-    await page.getByRole('combobox').selectOption('ADMIN');
+    await page.getByRole('combobox', { name: 'Filter by role' }).selectOption('ADMIN');
     await expect(page.getByRole('cell', { name: email, exact: true })).not.toBeVisible();
 
-    await page.getByRole('combobox').selectOption('');
+    await page.getByRole('combobox', { name: 'Filter by role' }).selectOption('');
     await expect(page.getByRole('cell', { name: email, exact: true })).toBeVisible();
   });
 });

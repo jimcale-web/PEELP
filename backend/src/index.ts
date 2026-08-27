@@ -90,6 +90,7 @@ app.post('/api/register', asyncHandler(async (req, res) => {
       email,
       emailVerified: false,
       role: 'STUDENT',
+      approvalStatus: 'PENDING',
       city,
       country,
       phoneNumber,
@@ -118,6 +119,13 @@ const createUserSchema = z.object({
   email: z.string().email('Valid email is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
   role: z.enum(['ADMIN', 'INSTRUCTOR', 'STUDENT']).default('STUDENT'),
+  city: z.string().optional().or(z.literal('')),
+  country: z.string().optional().or(z.literal('')),
+  phoneNumber: z
+    .string()
+    .refine((v) => v === '' || /^[+\d\s\-().]+$/.test(v), 'Phone number contains invalid characters.')
+    .optional()
+    .or(z.literal('')),
 });
 
 app.post('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
@@ -128,7 +136,7 @@ app.post('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (req,
     return;
   }
 
-  const { name, email, password, role } = parsed.data;
+  const { name, email, password, role, city, country, phoneNumber } = parsed.data;
 
   // Use better-auth's own scrypt hasher so the hash is compatible with sign-in
   const hashedPassword = await hashPassword(password);
@@ -150,6 +158,10 @@ app.post('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (req,
       email,
       emailVerified: false,
       role,
+      approvalStatus: 'APPROVED',
+      city: city || null,
+      country: country || null,
+      phoneNumber: phoneNumber || null,
       createdAt: now,
       updatedAt: now,
       accounts: {
@@ -169,6 +181,10 @@ app.post('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (req,
       email: true,
       role: true,
       emailVerified: true,
+      approvalStatus: true,
+      city: true,
+      country: true,
+      phoneNumber: true,
       createdAt: true,
       deletedAt: true,
     },
@@ -186,12 +202,47 @@ app.get('/api/admin/users', requireAuth, requireAdmin, asyncHandler(async (_req,
       email: true,
       role: true,
       emailVerified: true,
+      approvalStatus: true,
       createdAt: true,
       deletedAt: true,
     },
     orderBy: { createdAt: 'desc' },
   });
   res.json({ users });
+}));
+
+// Admin: approve or reject a user
+app.patch('/api/admin/users/:id/approval', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { approvalStatus } = req.body;
+
+  if (approvalStatus !== 'APPROVED' && approvalStatus !== 'REJECTED') {
+    res.status(400).json({ error: 'approvalStatus must be APPROVED or REJECTED.' });
+    return;
+  }
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: 'User not found.' });
+    return;
+  }
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: { approvalStatus, updatedAt: new Date() },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      approvalStatus: true,
+      createdAt: true,
+      deletedAt: true,
+    },
+  });
+
+  res.json({ user });
 }));
 
 // Admin: update a user
@@ -314,6 +365,129 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, asyncHandler(async
   // STUDENT — hard delete (Prisma cascade removes accounts & sessions)
   await prisma.user.delete({ where: { id } });
   res.status(200).json({ deleted: 'hard', name: existing.name });
+}));
+
+// Admin: list students only (includes profile + access fields)
+app.get('/api/admin/students', requireAuth, requireAdmin, asyncHandler(async (_req, res) => {
+  const students = await prisma.user.findMany({
+    where: { role: 'STUDENT' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      approvalStatus: true,
+      city: true,
+      country: true,
+      phoneNumber: true,
+      accessDuration: true,
+      accessExpiresAt: true,
+      createdAt: true,
+      deletedAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ students });
+}));
+
+// Admin: set / update a student's accessibility duration (MONTHLY or YEARLY).
+// Each call resets the expiry from "now": +1 month for MONTHLY, +1 year for YEARLY.
+const setAccessDurationSchema = z.object({
+  accessDuration: z.enum(['MONTHLY', 'YEARLY']),
+});
+
+app.patch('/api/admin/students/:id/access', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = setAccessDurationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'accessDuration must be MONTHLY or YEARLY.' });
+    return;
+  }
+
+  const { id } = req.params;
+  const { accessDuration } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: 'Student not found.' });
+    return;
+  }
+  if (existing.role !== 'STUDENT') {
+    res.status(400).json({ error: 'This endpoint is only for students.' });
+    return;
+  }
+
+  const now = new Date();
+  const accessExpiresAt = new Date(now);
+  if (accessDuration === 'MONTHLY') {
+    accessExpiresAt.setMonth(accessExpiresAt.getMonth() + 1);
+  } else {
+    accessExpiresAt.setFullYear(accessExpiresAt.getFullYear() + 1);
+  }
+
+  const student = await prisma.user.update({
+    where: { id },
+    data: { accessDuration, accessExpiresAt, updatedAt: now },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      city: true,
+      country: true,
+      phoneNumber: true,
+      accessDuration: true,
+      accessExpiresAt: true,
+      createdAt: true,
+      deletedAt: true,
+    },
+  });
+
+  res.json({ student });
+}));
+
+// Admin: approve or reject a student
+app.patch('/api/admin/students/:id/approval', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { approvalStatus } = req.body;
+
+  if (approvalStatus !== 'APPROVED' && approvalStatus !== 'REJECTED') {
+    res.status(400).json({ error: 'approvalStatus must be APPROVED or REJECTED.' });
+    return;
+  }
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: 'Student not found.' });
+    return;
+  }
+  if (existing.role !== 'STUDENT') {
+    res.status(400).json({ error: 'This endpoint is only for students.' });
+    return;
+  }
+
+  const student = await prisma.user.update({
+    where: { id },
+    data: { approvalStatus, updatedAt: new Date() },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      approvalStatus: true,
+      city: true,
+      country: true,
+      phoneNumber: true,
+      accessDuration: true,
+      accessExpiresAt: true,
+      createdAt: true,
+      deletedAt: true,
+    },
+  });
+
+  res.json({ student });
 }));
 
 app.use(errorHandler);

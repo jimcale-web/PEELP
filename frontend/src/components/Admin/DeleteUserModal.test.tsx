@@ -13,6 +13,7 @@ const instructor: UserRow = {
   email: 'bob@example.com',
   role: 'INSTRUCTOR',
   emailVerified: true,
+  approvalStatus: 'APPROVED',
   createdAt: '2024-02-20T10:00:00.000Z',
   deletedAt: null,
 };
@@ -23,6 +24,7 @@ const student: UserRow = {
   email: 'carol@example.com',
   role: 'STUDENT',
   emailVerified: false,
+  approvalStatus: 'APPROVED',
   createdAt: '2024-03-10T10:00:00.000Z',
   deletedAt: null,
 };

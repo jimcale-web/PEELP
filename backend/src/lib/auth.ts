@@ -28,7 +28,12 @@ export const auth = betterAuth({
                 required: false,
                 defaultValue: "STUDENT",
             },
-            deletedAt: {
+            approvalStatus: {
+            type: "string",
+            required: false,
+            defaultValue: "PENDING",
+        },
+        deletedAt: {
                 type: "date",
                 required: false,
             },

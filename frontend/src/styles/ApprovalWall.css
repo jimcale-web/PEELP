@@ -1,0 +1,74 @@
+.approval-wall {
+  min-height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 40px 20px;
+}
+
+.approval-card {
+  background: white;
+  border-radius: 16px;
+  padding: 52px 40px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.approval-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+}
+
+.approval-icon--pending {
+  background: #fff8e6;
+  color: #d68910;
+}
+
+.approval-icon--rejected {
+  background: #fde8e8;
+  color: #c0392b;
+}
+
+.approval-card h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 16px;
+}
+
+.approval-card p {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+.approval-hint {
+  font-size: 13px !important;
+  color: #aaa !important;
+}
+
+.approval-signout-btn {
+  margin-top: 28px;
+  padding: 10px 28px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.approval-signout-btn:hover {
+  opacity: 0.88;
+}

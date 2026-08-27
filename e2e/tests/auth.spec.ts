@@ -30,21 +30,21 @@ test.describe('Login page', () => {
     await page.getByLabel('Password').fill('somepassword');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await expect(page.getByText('Invalid email address')).toBeVisible();
+    await expect(page.getByText('Please enter a valid email address.')).toBeVisible();
   });
 
   test('shows validation error when password is empty', async ({ page }) => {
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await expect(page.getByText('Password is required')).toBeVisible();
+    await expect(page.getByText('Please enter your password.')).toBeVisible();
   });
 
   test('shows validation errors when both fields are empty', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await expect(page.getByText('Invalid email address')).toBeVisible();
-    await expect(page.getByText('Password is required')).toBeVisible();
+    await expect(page.getByText('Please enter a valid email address.')).toBeVisible();
+    await expect(page.getByText('Please enter your password.')).toBeVisible();
   });
 
   test('whitespace-only email fails email validation', async ({ page }) => {
@@ -52,7 +52,7 @@ test.describe('Login page', () => {
     await page.getByLabel('Password').fill('somepassword');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await expect(page.getByText('Invalid email address')).toBeVisible();
+    await expect(page.getByText('Please enter a valid email address.')).toBeVisible();
   });
 
   // ─── Submission behaviour ────────────────────────────────────────────────────

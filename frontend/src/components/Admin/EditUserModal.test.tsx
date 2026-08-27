@@ -13,6 +13,7 @@ const mockUser: UserRow = {
   email: 'alice@example.com',
   role: 'ADMIN',
   emailVerified: true,
+  approvalStatus: 'APPROVED',
   createdAt: '2024-01-15T10:00:00.000Z',
   deletedAt: null,
 };

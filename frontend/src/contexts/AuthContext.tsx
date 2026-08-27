@@ -7,6 +7,7 @@ export interface User {
   name: string;
   email: string;
   role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   image?: string;
 }
 

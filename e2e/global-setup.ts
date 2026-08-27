@@ -1,5 +1,8 @@
+import { chromium } from '@playwright/test';
+import type { FullConfig } from '@playwright/test';
 import { execSync } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 import * as dotenv from 'dotenv';
 import pg from 'pg';
 import { randomBytes, scrypt } from 'node:crypto';
@@ -20,7 +23,9 @@ async function hashPasswordForBetterAuth(password: string): Promise<string> {
   return `${salt}:${key.toString('hex')}`;
 }
 
-export default async function globalSetup() {
+const AUTH_FILE = path.join(__dirname, 'tests/.auth/admin.json');
+
+export default async function globalSetup(config: FullConfig) {
   // Load test env so DATABASE_URL points to peelp_test.
   // override:true ensures a host-level DATABASE_URL (e.g. peelp_dev from a
   // developer's shell) never takes precedence over the dedicated test DB.
@@ -85,8 +90,8 @@ export default async function globalSetup() {
   const userId = randomUUID();
   const now = new Date();
   await dbClient.query(
-    `INSERT INTO "user" (id, name, email, "emailVerified", role, "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, true, 'ADMIN', $4, $4)`,
+    `INSERT INTO "user" (id, name, email, "emailVerified", role, "approvalStatus", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, true, 'ADMIN', 'APPROVED', $4, $4)`,
     [userId, 'Admin User', adminEmail, now],
   );
 
@@ -100,4 +105,25 @@ export default async function globalSetup() {
 
   await dbClient.end();
   console.log(`[e2e] Admin user seeded (${adminEmail}).`);
+
+  // --- Log in via browser and save the session cookie for all tests that need auth ---
+  // The baseURL is read from the first project's resolved use options.
+  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://localhost:5174';
+
+  fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+
+  console.log('[e2e] Logging in as admin and saving session...');
+  const browser = await chromium.launch();
+  const context = await browser.newContext({ baseURL });
+  const page = await context.newPage();
+
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(adminEmail);
+  await page.getByLabel('Password').fill(adminPassword);
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.waitForURL('/');
+
+  await context.storageState({ path: AUTH_FILE });
+  await browser.close();
+  console.log('[e2e] Admin session saved.');
 }

@@ -28,16 +28,10 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.ts',
 
   projects: [
-    // The setup project logs in once and saves auth cookies to a file.
-    // The chromium project depends on it so the auth file exists before tests run.
-    {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
-    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      dependencies: ['setup'],
+      testIgnore: /.*\.setup\.ts/,
     },
   ],
 
@@ -49,7 +43,7 @@ export default defineConfig({
       // leaking in when DATABASE_URL is set in the developer's shell).
       command: 'npm run build --prefix backend && node backend/dist/index.js',
       url: `http://localhost:${E2E_PORT_BACKEND}/api/health`,
-      reuseExistingServer: false,
+      reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       env: {
         NODE_ENV: 'test',
@@ -67,7 +61,7 @@ export default defineConfig({
       // Frontend: preview build pointed at the test backend (include /api so axios baseURL is correct)
       command: `cross-env VITE_API_URL=http://localhost:${E2E_PORT_BACKEND}/api npm run build --prefix frontend && npm run preview --prefix frontend -- --port ${E2E_PORT_FRONTEND}`,
       url: `http://localhost:${E2E_PORT_FRONTEND}`,
-      reuseExistingServer: false,
+      reuseExistingServer: !process.env.CI,
       timeout: 180_000,
     },
   ],
