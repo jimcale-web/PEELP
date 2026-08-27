@@ -32,6 +32,18 @@ export const auth = betterAuth({
                 type: "date",
                 required: false,
             },
+            country: {
+                type: "string",
+                required: false,
+            },
+            city: {
+                type: "string",
+                required: false,
+            },
+            phoneNumber: {
+                type: "string",
+                required: false,
+            },
         },
     },
 });

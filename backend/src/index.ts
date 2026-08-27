@@ -49,7 +49,70 @@ app.get("/api/me", requireAuth, (req, res) => {
   res.json({ user: req.user, session: req.session });
 });
 
-// Admin: create a user
+// Public: self-registration
+const registerSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+  email: z.string().email('Valid email is required.'),
+  password: z.string().min(8, 'Password must be at least 8 characters.'),
+  city: z.string().min(1, 'City is required.'),
+  country: z.string().min(1, 'Country is required.'),
+  phoneNumber: z
+    .string()
+    .min(7, 'Phone number must be at least 7 characters.')
+    .regex(/^[+\d\s\-().]+$/, 'Phone number contains invalid characters.'),
+});
+
+app.post('/api/register', asyncHandler(async (req, res) => {
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { name, email, password, city, country, phoneNumber } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    res.status(409).json({ error: 'An account with that email already exists.' });
+    return;
+  }
+
+  const hashedPassword = await hashPassword(password);
+  const { randomUUID } = await import('crypto');
+  const now = new Date();
+  const userId = randomUUID();
+
+  const user = await prisma.user.create({
+    data: {
+      id: userId,
+      name,
+      email,
+      emailVerified: false,
+      role: 'STUDENT',
+      city,
+      country,
+      phoneNumber,
+      createdAt: now,
+      updatedAt: now,
+      accounts: {
+        create: {
+          id: randomUUID(),
+          accountId: userId,
+          providerId: 'credential',
+          password: hashedPassword,
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+    },
+    select: { id: true, name: true, email: true, role: true },
+  });
+
+  res.status(201).json({ user });
+}));
+
+
 const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   email: z.string().email('Valid email is required.'),

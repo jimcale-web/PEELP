@@ -19,6 +19,9 @@ model User {
   emailVerified Boolean
   image         String?
   role          Role      @default(STUDENT)
+  city          String?
+  phoneNumber   String?
+  country       String?
   deletedAt     DateTime?
   createdAt     DateTime
   updatedAt     DateTime

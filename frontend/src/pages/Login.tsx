@@ -1,22 +1,49 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/Login.css';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(1, 'Please enter your password.'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+function resolveLoginError(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status;
+    if (!err.response) {
+      return "Unable to connect. Please check your internet connection and try again.";
+    }
+    if (status === 400 || status === 401) {
+      return "The email or password you entered is incorrect. Please try again.";
+    }
+    if (status === 429) {
+      return "Too many sign-in attempts. Please wait a few minutes before trying again.";
+    }
+    return "Something went wrong while signing in. Please try again.";
+  }
+  if (err instanceof Error) {
+    // Filter out internal axios/better-auth noise
+    if (err.message.startsWith('Login failed:') || err.message.includes('status code')) {
+      return "Something went wrong while signing in. Please try again.";
+    }
+    return err.message;
+  }
+  return "Something went wrong while signing in. Please try again.";
+}
 
 export default function Login() {
   const [serverError, setServerError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const justRegistered = (location.state as { registered?: boolean } | null)?.registered === true;
 
   const {
     register,
@@ -32,9 +59,7 @@ export default function Login() {
       await login(data.email, data.password);
       navigate('/');
     } catch (err) {
-      setServerError(
-        err instanceof Error ? err.message : 'Login failed. Please try again.'
-      );
+      setServerError(resolveLoginError(err));
     }
   };
 
@@ -42,6 +67,12 @@ export default function Login() {
     <div className="login-container">
       <div className="login-card">
         <h2>Sign In</h2>
+
+        {justRegistered && (
+          <div className="success-message">
+            Account created! You can now sign in.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="form-group">
@@ -81,6 +112,10 @@ export default function Login() {
 
         <div className="login-footer">
           <p>Contact your administrator if you need access.</p>
+          <p style={{ marginTop: '10px' }}>
+            Don't have an account?{' '}
+            <Link to="/register" className="register-link">Create one</Link>
+          </p>
         </div>
       </div>
     </div>
