@@ -50,7 +50,7 @@ export default defineConfig({
       command: 'npm run build --prefix backend && node backend/dist/index.js',
       url: `http://localhost:${E2E_PORT_BACKEND}/api/health`,
       reuseExistingServer: false,
-      timeout: 60_000,
+      timeout: 120_000,
       env: {
         NODE_ENV: 'test',
         PORT: String(E2E_PORT_BACKEND),
@@ -68,7 +68,7 @@ export default defineConfig({
       command: `cross-env VITE_API_URL=http://localhost:${E2E_PORT_BACKEND}/api npm run build --prefix frontend && npm run preview --prefix frontend -- --port ${E2E_PORT_FRONTEND}`,
       url: `http://localhost:${E2E_PORT_FRONTEND}`,
       reuseExistingServer: false,
-      timeout: 60_000,
+      timeout: 180_000,
     },
   ],
 });

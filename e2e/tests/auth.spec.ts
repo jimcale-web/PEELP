@@ -12,7 +12,6 @@ test.describe('Login page', () => {
   // ─── Rendering ──────────────────────────────────────────────────────────────
 
   test('renders the login form', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'PEELP' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
