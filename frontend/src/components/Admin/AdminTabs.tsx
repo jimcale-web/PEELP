@@ -4,6 +4,7 @@ import './AdminTabs.css';
 const tabs = [
   { to: '/admin/users', label: 'User Management' },
   { to: '/admin/students', label: 'Student Management' },
+  { to: '/admin/courses', label: 'Course Management' },
 ];
 
 export default function AdminTabs() {

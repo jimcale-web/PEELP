@@ -490,6 +490,137 @@ app.patch('/api/admin/students/:id/approval', requireAuth, requireAdmin, asyncHa
   res.json({ student });
 }));
 
+// Admin: list all courses
+app.get('/api/admin/courses', requireAuth, requireAdmin, asyncHandler(async (_req, res) => {
+  const courses = await prisma.course.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructorId: true,
+      instructor: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ courses });
+}));
+
+const courseSchema = z.object({
+  title: z.string().min(1, 'Title is required.'),
+  description: z.string().optional().or(z.literal('')),
+  instructorId: z.string().optional().or(z.literal('')),
+});
+
+// Admin: create a course
+app.post('/api/admin/courses', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = courseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { title, description, instructorId } = parsed.data;
+
+  if (instructorId) {
+    const instructor = await prisma.user.findUnique({ where: { id: instructorId } });
+    if (!instructor || instructor.role !== 'INSTRUCTOR') {
+      res.status(400).json({ error: 'Instructor not found.' });
+      return;
+    }
+  }
+
+  const { randomUUID } = await import('crypto');
+  const now = new Date();
+
+  const course = await prisma.course.create({
+    data: {
+      id: randomUUID(),
+      title,
+      description: description || null,
+      instructorId: instructorId || null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructorId: true,
+      instructor: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  res.status(201).json({ course });
+}));
+
+// Admin: update a course
+app.patch('/api/admin/courses/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = courseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { id } = req.params;
+  const { title, description, instructorId } = parsed.data;
+
+  const existing = await prisma.course.findUnique({ where: { id } });
+  if (!existing || existing.deletedAt) {
+    res.status(404).json({ error: 'Course not found.' });
+    return;
+  }
+
+  if (instructorId) {
+    const instructor = await prisma.user.findUnique({ where: { id: instructorId } });
+    if (!instructor || instructor.role !== 'INSTRUCTOR') {
+      res.status(400).json({ error: 'Instructor not found.' });
+      return;
+    }
+  }
+
+  const course = await prisma.course.update({
+    where: { id },
+    data: {
+      title,
+      description: description || null,
+      instructorId: instructorId || null,
+      updatedAt: new Date(),
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructorId: true,
+      instructor: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  res.json({ course });
+}));
+
+// Admin: delete a course (soft delete)
+app.delete('/api/admin/courses/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const existing = await prisma.course.findUnique({ where: { id } });
+  if (!existing || existing.deletedAt) {
+    res.status(404).json({ error: 'Course not found.' });
+    return;
+  }
+
+  await prisma.course.update({ where: { id }, data: { deletedAt: new Date() } });
+  res.status(200).json({ deleted: true, title: existing.title });
+}));
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {

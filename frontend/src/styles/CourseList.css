@@ -1,0 +1,31 @@
+/* CourseList page — inherits shared classes from UserList.css */
+.cell-desc {
+  max-width: 260px;
+  color: #555;
+  font-size: 13px;
+}
+
+.text-muted {
+  color: #aaa;
+  font-style: italic;
+}
+
+/* Textarea in course modals */
+.modal-field textarea {
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background: #fafafa;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-field textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  background: white;
+}

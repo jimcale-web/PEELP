@@ -41,6 +41,7 @@ model User {
   updatedAt        DateTime
   sessions         Session[]
   accounts         Account[]
+  courses          Course[]
 
   @@map("user")
 }
@@ -87,4 +88,31 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model Course {
+  id           String    @id
+  title        String
+  description  String?
+  instructorId String?
+  instructor   User?     @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt    DateTime
+  updatedAt    DateTime
+  deletedAt    DateTime?
+
+  @@map("course")
+}
+
+model Category {
+  id          String    @id
+  name        String    @unique
+  description String?
+  createdAt   DateTime
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  courses     Course[]
+
+  @@map("category")
 }
