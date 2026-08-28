@@ -218,6 +218,44 @@
   }
 }
 
+@media (max-width: 520px) {
+  .user-list-container {
+    padding: 20px 12px;
+  }
+
+  .user-list-card {
+    padding: 20px 14px;
+    border-radius: 8px;
+  }
+
+  .user-list-toolbar {
+    justify-content: stretch;
+  }
+
+  .btn-new-user {
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal-card {
+    padding: 24px 18px;
+    border-radius: 10px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-actions .btn-cancel,
+  .modal-actions .btn-create,
+  .modal-actions .btn-delete,
+  .modal-actions .btn-deactivate {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Toolbar (above filters) */
 .user-list-toolbar {
   display: flex;

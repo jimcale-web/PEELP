@@ -9,6 +9,7 @@ const schema = z.object({
   title: z.string().min(1, 'Title is required.'),
   description: z.string().optional(),
   instructorId: z.string().optional(),
+  categoryId: z.string().optional(),
 });
 
 type FormFields = z.infer<typeof schema>;
@@ -19,12 +20,19 @@ interface Instructor {
   name: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 export interface CourseRow {
   id: string;
   title: string;
   description: string | null;
   instructorId: string | null;
   instructor: { id: string; name: string } | null;
+  categoryId: string | null;
+  category: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +48,7 @@ export default function EditCourseModal({ course, onClose }: Props) {
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description ?? '');
   const [instructorId, setInstructorId] = useState(course.instructorId ?? '');
+  const [categoryId, setCategoryId] = useState(course.categoryId ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
   const [touched, setTouched] = useState({ title: false });
@@ -55,6 +64,17 @@ export default function EditCourseModal({ course, onClose }: Props) {
     },
   });
 
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['admin', 'categories'],
+    queryFn: async () => {
+      const res = await axios.get<{ categories: Category[] }>(
+        `${API_URL}/admin/categories`,
+        { withCredentials: true },
+      );
+      return res.data.categories;
+    },
+  });
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -64,7 +84,7 @@ export default function EditCourseModal({ course, onClose }: Props) {
   }, [onClose]);
 
   function getFieldErrors(): FieldErrors {
-    const result = schema.safeParse({ title, description, instructorId });
+    const result = schema.safeParse({ title, description, instructorId, categoryId });
     if (result.success) return {};
     return Object.fromEntries(result.error.issues.map((e) => [e.path[0], e.message])) as FieldErrors;
   }
@@ -82,7 +102,12 @@ export default function EditCourseModal({ course, onClose }: Props) {
     try {
       await axios.patch(
         `${API_URL}/admin/courses/${course.id}`,
-        { title: title.trim(), description: description.trim(), instructorId: instructorId || undefined },
+        {
+          title: title.trim(),
+          description: description.trim(),
+          instructorId: instructorId || undefined,
+          categoryId: categoryId || undefined,
+        },
         { withCredentials: true },
       );
       await queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
@@ -131,6 +156,20 @@ export default function EditCourseModal({ course, onClose }: Props) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          <div className="modal-field">
+            <label htmlFor="ec-category">Category</label>
+            <select
+              id="ec-category"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              <option value="">— Uncategorised —</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="modal-field">

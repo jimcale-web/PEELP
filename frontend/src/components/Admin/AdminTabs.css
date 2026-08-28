@@ -2,6 +2,14 @@
   background: white;
   border-bottom: 1px solid #e0e0e0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+  /* Hide scrollbar but keep functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-tabs-inner {
@@ -10,6 +18,21 @@
   padding: 0 20px;
   display: flex;
   gap: 4px;
+  /* Prevent tabs from wrapping on small screens */
+  white-space: nowrap;
+  width: max-content;
+  min-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .admin-tabs-inner {
+    padding: 0 12px;
+  }
+
+  .admin-tab {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
 }
 
 .admin-tab {

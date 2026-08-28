@@ -72,3 +72,24 @@
 .approval-signout-btn:hover {
   opacity: 0.88;
 }
+
+@media (max-width: 480px) {
+  .approval-card {
+    padding: 36px 24px;
+    border-radius: 12px;
+  }
+
+  .approval-card h1 {
+    font-size: 20px;
+  }
+
+  .approval-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 20px;
+  }
+
+  .approval-signout-btn {
+    width: 100%;
+  }
+}

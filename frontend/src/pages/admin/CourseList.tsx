@@ -68,6 +68,7 @@ export default function CourseList() {
                 <tr>
                   <th>Title</th>
                   <th>Description</th>
+                  <th>Category</th>
                   <th>Instructor</th>
                   <th>Created</th>
                   <th>Actions</th>
@@ -76,7 +77,7 @@ export default function CourseList() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="no-results">No courses found.</td>
+                    <td colSpan={6} className="no-results">No courses found.</td>
                   </tr>
                 ) : (
                   filtered.map((course) => (
@@ -88,6 +89,11 @@ export default function CourseList() {
                             ? course.description.slice(0, 60) + '…'
                             : course.description
                           : <span className="text-muted">—</span>}
+                      </td>
+                      <td>
+                        {course.category
+                          ? course.category.name
+                          : <span className="text-muted">Uncategorised</span>}
                       </td>
                       <td>
                         {course.instructor

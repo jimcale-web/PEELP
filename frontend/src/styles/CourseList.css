@@ -10,7 +10,7 @@
   font-style: italic;
 }
 
-/* Textarea in course modals */
+/* Textarea in course/category modals */
 .modal-field textarea {
   padding: 10px 14px;
   border: 1px solid #e0e0e0;
@@ -28,4 +28,15 @@
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
   background: white;
+}
+
+/* Course-count pill in category table */
+.course-count-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: #eef2ff;
+  color: #4f63c8;
+  font-size: 12px;
+  font-weight: 600;
 }

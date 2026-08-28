@@ -13,6 +13,7 @@ import StudentList from './pages/admin/StudentList';
 import PendingApproval from './pages/PendingApproval';
 import Rejected from './pages/Rejected';
 import CourseList from './pages/admin/CourseList';
+import CategoryList from './pages/admin/CategoryList';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -59,6 +60,16 @@ function App() {
               <AdminRoute>
                 <AdminLayout>
                   <CourseList />
+                </AdminLayout>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/categories"
+            element={
+              <AdminRoute>
+                <AdminLayout>
+                  <CategoryList />
                 </AdminLayout>
               </AdminRoute>
             }

@@ -500,6 +500,8 @@ app.get('/api/admin/courses', requireAuth, requireAdmin, asyncHandler(async (_re
       description: true,
       instructorId: true,
       instructor: { select: { id: true, name: true } },
+      categoryId: true,
+      category: { select: { id: true, name: true } },
       createdAt: true,
       updatedAt: true,
     },
@@ -512,6 +514,7 @@ const courseSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   description: z.string().optional().or(z.literal('')),
   instructorId: z.string().optional().or(z.literal('')),
+  categoryId: z.string().optional().or(z.literal('')),
 });
 
 // Admin: create a course
@@ -523,12 +526,20 @@ app.post('/api/admin/courses', requireAuth, requireAdmin, asyncHandler(async (re
     return;
   }
 
-  const { title, description, instructorId } = parsed.data;
+  const { title, description, instructorId, categoryId } = parsed.data;
 
   if (instructorId) {
     const instructor = await prisma.user.findUnique({ where: { id: instructorId } });
     if (!instructor || instructor.role !== 'INSTRUCTOR') {
       res.status(400).json({ error: 'Instructor not found.' });
+      return;
+    }
+  }
+
+  if (categoryId) {
+    const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!cat || cat.deletedAt) {
+      res.status(400).json({ error: 'Category not found.' });
       return;
     }
   }
@@ -542,6 +553,7 @@ app.post('/api/admin/courses', requireAuth, requireAdmin, asyncHandler(async (re
       title,
       description: description || null,
       instructorId: instructorId || null,
+      categoryId: categoryId || null,
       createdAt: now,
       updatedAt: now,
     },
@@ -551,6 +563,8 @@ app.post('/api/admin/courses', requireAuth, requireAdmin, asyncHandler(async (re
       description: true,
       instructorId: true,
       instructor: { select: { id: true, name: true } },
+      categoryId: true,
+      category: { select: { id: true, name: true } },
       createdAt: true,
       updatedAt: true,
     },
@@ -569,7 +583,7 @@ app.patch('/api/admin/courses/:id', requireAuth, requireAdmin, asyncHandler(asyn
   }
 
   const { id } = req.params;
-  const { title, description, instructorId } = parsed.data;
+  const { title, description, instructorId, categoryId } = parsed.data;
 
   const existing = await prisma.course.findUnique({ where: { id } });
   if (!existing || existing.deletedAt) {
@@ -585,12 +599,21 @@ app.patch('/api/admin/courses/:id', requireAuth, requireAdmin, asyncHandler(asyn
     }
   }
 
+  if (categoryId) {
+    const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!cat || cat.deletedAt) {
+      res.status(400).json({ error: 'Category not found.' });
+      return;
+    }
+  }
+
   const course = await prisma.course.update({
     where: { id },
     data: {
       title,
       description: description || null,
       instructorId: instructorId || null,
+      categoryId: categoryId || null,
       updatedAt: new Date(),
     },
     select: {
@@ -599,6 +622,8 @@ app.patch('/api/admin/courses/:id', requireAuth, requireAdmin, asyncHandler(asyn
       description: true,
       instructorId: true,
       instructor: { select: { id: true, name: true } },
+      categoryId: true,
+      category: { select: { id: true, name: true } },
       createdAt: true,
       updatedAt: true,
     },
@@ -619,6 +644,120 @@ app.delete('/api/admin/courses/:id', requireAuth, requireAdmin, asyncHandler(asy
 
   await prisma.course.update({ where: { id }, data: { deletedAt: new Date() } });
   res.status(200).json({ deleted: true, title: existing.title });
+}));
+
+// ── Categories ───────────────────────────────────────────────────────────────
+
+const categorySelect = {
+  id: true,
+  name: true,
+  description: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: { select: { courses: true } },
+} as const;
+
+// Admin: list all categories
+app.get('/api/admin/categories', requireAuth, requireAdmin, asyncHandler(async (_req, res) => {
+  const categories = await prisma.category.findMany({
+    where: { deletedAt: null },
+    select: categorySelect,
+    orderBy: { name: 'asc' },
+  });
+  res.json({ categories });
+}));
+
+const categorySchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+  description: z.string().optional().or(z.literal('')),
+});
+
+// Admin: create a category
+app.post('/api/admin/categories', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = categorySchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { name, description } = parsed.data;
+
+  const existing = await prisma.category.findFirst({
+    where: { name: { equals: name, mode: 'insensitive' }, deletedAt: null },
+  });
+  if (existing) {
+    res.status(409).json({ error: 'A category with that name already exists.' });
+    return;
+  }
+
+  const { randomUUID } = await import('crypto');
+  const now = new Date();
+
+  const category = await prisma.category.create({
+    data: {
+      id: randomUUID(),
+      name,
+      description: description || null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    select: categorySelect,
+  });
+
+  res.status(201).json({ category });
+}));
+
+// Admin: update a category
+app.patch('/api/admin/categories/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = categorySchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { id } = req.params;
+  const { name, description } = parsed.data;
+
+  const existing = await prisma.category.findUnique({ where: { id } });
+  if (!existing || existing.deletedAt) {
+    res.status(404).json({ error: 'Category not found.' });
+    return;
+  }
+
+  const nameConflict = await prisma.category.findFirst({
+    where: { name: { equals: name, mode: 'insensitive' }, deletedAt: null, NOT: { id } },
+  });
+  if (nameConflict) {
+    res.status(409).json({ error: 'A category with that name already exists.' });
+    return;
+  }
+
+  const category = await prisma.category.update({
+    where: { id },
+    data: { name, description: description || null, updatedAt: new Date() },
+    select: categorySelect,
+  });
+
+  res.json({ category });
+}));
+
+// Admin: delete a category (soft delete)
+app.delete('/api/admin/categories/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const existing = await prisma.category.findUnique({ where: { id } });
+  if (!existing || existing.deletedAt) {
+    res.status(404).json({ error: 'Category not found.' });
+    return;
+  }
+
+  // Unlink any courses pointing at this category
+  await prisma.course.updateMany({ where: { categoryId: id }, data: { categoryId: null } });
+  await prisma.category.update({ where: { id }, data: { deletedAt: new Date() } });
+
+  res.status(200).json({ deleted: true, name: existing.name });
 }));
 
 app.use(errorHandler);

@@ -89,7 +89,117 @@
   transform: translateY(-1px);
 }
 
-@media (max-width: 768px) {
+/* ── Hamburger button (hidden on desktop) ── */
+.navbar-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 28px;
+  height: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.navbar-hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: transform 0.25s, opacity 0.25s;
+}
+
+/* Animated X when open */
+.navbar-hamburger.is-open span:nth-child(1) {
+  transform: translateY(9px) rotate(45deg);
+}
+.navbar-hamburger.is-open span:nth-child(2) {
+  opacity: 0;
+}
+.navbar-hamburger.is-open span:nth-child(3) {
+  transform: translateY(-9px) rotate(-45deg);
+}
+
+/* ── Mobile drawer ── */
+.navbar-mobile-drawer {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #764ba2 0%, #667eea 100%);
+  padding: 12px 20px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.nav-link-mobile {
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  transition: color 0.2s;
+}
+
+.nav-link-mobile:hover {
+  color: white;
+}
+
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 8px;
+  color: white;
+}
+
+.mobile-user-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.mobile-logout-btn {
+  margin-top: 4px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+.mobile-logout-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Responsive breakpoints ── */
+@media (max-width: 640px) {
+  .navbar-container {
+    height: 60px;
+  }
+
+  .navbar-brand h1 {
+    font-size: 20px;
+  }
+
+  /* Hide desktop nav and user section; show hamburger */
+  .navbar-menu,
+  .navbar-user {
+    display: none;
+  }
+
+  .navbar-hamburger {
+    display: flex;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
   .navbar-container {
     height: 60px;
   }
@@ -114,5 +224,12 @@
   .logout-btn {
     padding: 6px 12px;
     font-size: 12px;
+  }
+}
+
+/* Drawer only visible on mobile */
+@media (min-width: 641px) {
+  .navbar-mobile-drawer {
+    display: none !important;
   }
 }

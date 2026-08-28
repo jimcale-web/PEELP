@@ -273,3 +273,27 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 520px) {
+  .student-list-container {
+    padding: 20px 12px;
+  }
+
+  .student-list-card {
+    padding: 20px 14px;
+    border-radius: 8px;
+  }
+
+  .student-list-toolbar {
+    flex-direction: column;
+  }
+
+  .student-search-input {
+    max-width: 100%;
+  }
+
+  .btn-new-student {
+    width: 100%;
+    text-align: center;
+  }
+}

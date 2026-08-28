@@ -9,12 +9,18 @@ const schema = z.object({
   title: z.string().min(1, 'Title is required.'),
   description: z.string().optional(),
   instructorId: z.string().optional(),
+  categoryId: z.string().optional(),
 });
 
 type FormFields = z.infer<typeof schema>;
 type FieldErrors = Partial<Record<keyof FormFields, string>>;
 
 interface Instructor {
+  id: string;
+  name: string;
+}
+
+interface Category {
   id: string;
   name: string;
 }
@@ -29,6 +35,7 @@ export default function CreateCourseModal({ onClose }: Props) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [instructorId, setInstructorId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
   const [touched, setTouched] = useState({ title: false });
@@ -44,6 +51,17 @@ export default function CreateCourseModal({ onClose }: Props) {
     },
   });
 
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['admin', 'categories'],
+    queryFn: async () => {
+      const res = await axios.get<{ categories: Category[] }>(
+        `${API_URL}/admin/categories`,
+        { withCredentials: true },
+      );
+      return res.data.categories;
+    },
+  });
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -53,7 +71,7 @@ export default function CreateCourseModal({ onClose }: Props) {
   }, [onClose]);
 
   function getFieldErrors(): FieldErrors {
-    const result = schema.safeParse({ title, description, instructorId });
+    const result = schema.safeParse({ title, description, instructorId, categoryId });
     if (result.success) return {};
     return Object.fromEntries(result.error.issues.map((e) => [e.path[0], e.message])) as FieldErrors;
   }
@@ -71,7 +89,12 @@ export default function CreateCourseModal({ onClose }: Props) {
     try {
       await axios.post(
         `${API_URL}/admin/courses`,
-        { title: title.trim(), description: description.trim(), instructorId: instructorId || undefined },
+        {
+          title: title.trim(),
+          description: description.trim(),
+          instructorId: instructorId || undefined,
+          categoryId: categoryId || undefined,
+        },
         { withCredentials: true },
       );
       await queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
@@ -122,6 +145,20 @@ export default function CreateCourseModal({ onClose }: Props) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional course description"
             />
+          </div>
+
+          <div className="modal-field">
+            <label htmlFor="cc-category">Category</label>
+            <select
+              id="cc-category"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              <option value="">— Uncategorised —</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="modal-field">

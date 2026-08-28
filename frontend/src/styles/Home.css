@@ -116,3 +116,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  .home-container {
+    padding: 24px 12px;
+    align-items: flex-start;
+  }
+
+  .welcome-card {
+    padding: 24px 16px;
+    border-radius: 8px;
+  }
+
+  .welcome-card h1 {
+    font-size: 22px;
+  }
+}
