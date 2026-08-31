@@ -6,6 +6,7 @@ const tabs = [
   { to: '/admin/students', label: 'Student Management' },
   { to: '/admin/courses', label: 'Course Management' },
   { to: '/admin/categories', label: 'Category Management' },
+  { to: '/admin/reports', label: 'Reports' },
 ];
 
 export default function AdminTabs() {

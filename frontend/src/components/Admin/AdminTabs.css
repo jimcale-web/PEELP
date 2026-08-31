@@ -1,7 +1,8 @@
 .admin-tabs-bar {
+  position: relative;
   background: white;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid #dfe3ee;
+  box-shadow: inset 0 -1px 0 rgba(223, 227, 238, 0.9);
   overflow-x: auto;
   /* Hide scrollbar but keep functionality */
   scrollbar-width: none;
@@ -13,6 +14,8 @@
 }
 
 .admin-tabs-inner {
+  position: relative;
+  z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
@@ -36,8 +39,10 @@
 }
 
 .admin-tab {
+  position: relative;
   display: inline-block;
   padding: 14px 20px;
+  margin-bottom: -1px;
   font-size: 14px;
   font-weight: 600;
   color: #777;
