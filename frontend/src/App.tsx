@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import InstructorRoute from './components/InstructorRoute';
 import AdminLayout from './components/Admin/AdminLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -15,6 +16,7 @@ import Rejected from './pages/Rejected';
 import CourseList from './pages/admin/CourseList';
 import CategoryList from './pages/admin/CategoryList';
 import Reports from './pages/admin/Reports';
+import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -33,6 +35,14 @@ function App() {
               <ProtectedRoute>
                 <Home />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor"
+            element={
+              <InstructorRoute>
+                <InstructorDashboard />
+              </InstructorRoute>
             }
           />
           <Route

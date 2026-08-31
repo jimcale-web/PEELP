@@ -40,6 +40,9 @@ export default function Navbar() {
           {user?.role === 'ADMIN' && (
             <Link to="/admin/users" className="nav-link">Admin</Link>
           )}
+          {(user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN') && (
+            <Link to="/instructor" className="nav-link">Instructor</Link>
+          )}
         </div>
 
         {user && (
@@ -76,6 +79,9 @@ export default function Navbar() {
           <a href="/" className="nav-link-mobile">Home</a>
           {user?.role === 'ADMIN' && (
             <Link to="/admin/users" className="nav-link-mobile">Admin</Link>
+          )}
+          {(user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN') && (
+            <Link to="/instructor" className="nav-link-mobile">Instructor</Link>
           )}
           {user && (
             <>

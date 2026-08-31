@@ -8,6 +8,7 @@ import { auth } from './lib/auth.js';
 import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { requireAuth } from './middleware/require-auth.js';
 import { requireAdmin } from './middleware/require-admin.js';
+import { requireInstructor } from './middleware/require-instructor.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { asyncHandler } from './lib/async-handler.js';
 import { prisma } from './lib/prisma.js';
@@ -15,6 +16,10 @@ import { prisma } from './lib/prisma.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:5174')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // Defence-in-depth: hard rate limit on the sign-in endpoint.
 // 10 attempts per 15 minutes per IP → HTTP 429.
@@ -29,7 +34,14 @@ const loginRateLimit = rateLimit({
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 
@@ -644,6 +656,95 @@ app.delete('/api/admin/courses/:id', requireAuth, requireAdmin, asyncHandler(asy
 
   await prisma.course.update({ where: { id }, data: { deletedAt: new Date() } });
   res.status(200).json({ deleted: true, title: existing.title });
+}));
+
+// Instructor: list own courses (admins can view all)
+app.get('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler(async (req, res) => {
+  const courses = await prisma.course.findMany({
+    where: {
+      deletedAt: null,
+      ...(req.user?.role === 'ADMIN' ? {} : { instructorId: req.user!.id }),
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructorId: true,
+      instructor: { select: { id: true, name: true } },
+      categoryId: true,
+      category: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  res.json({ courses });
+}));
+
+app.get('/api/instructor/categories', requireAuth, requireInstructor, asyncHandler(async (_req, res) => {
+  const categories = await prisma.category.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: { select: { courses: true } },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  res.json({ categories });
+}));
+
+app.post('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler(async (req, res) => {
+  const parsed = courseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { title, description, categoryId } = parsed.data;
+  const instructorId = req.user?.role === 'ADMIN' ? (req.body.instructorId || req.user.id) : req.user!.id;
+
+  if (categoryId) {
+    const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!cat || cat.deletedAt) {
+      res.status(400).json({ error: 'Category not found.' });
+      return;
+    }
+  }
+
+  const { randomUUID } = await import('crypto');
+  const now = new Date();
+
+  const course = await prisma.course.create({
+    data: {
+      id: randomUUID(),
+      title,
+      description: description || null,
+      instructorId,
+      categoryId: categoryId || null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructorId: true,
+      instructor: { select: { id: true, name: true } },
+      categoryId: true,
+      category: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  res.status(201).json({ course });
 }));
 
 // ── Categories ───────────────────────────────────────────────────────────────

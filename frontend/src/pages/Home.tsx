@@ -1,8 +1,17 @@
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/Home.css';
 
 export default function Home() {
   const { user } = useAuth();
+
+  if (user?.role === 'ADMIN') {
+    return <Navigate to="/admin/users" replace />;
+  }
+
+  if (user?.role === 'INSTRUCTOR') {
+    return <Navigate to="/instructor" replace />;
+  }
 
   return (
     <div className="home-container">
@@ -16,8 +25,6 @@ export default function Home() {
             <p>Role: <span className="role-badge">{user.role}</span></p>
           </div>
         )}
-
-
       </div>
     </div>
   );
