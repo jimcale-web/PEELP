@@ -17,6 +17,7 @@ import CourseList from './pages/admin/CourseList';
 import CategoryList from './pages/admin/CategoryList';
 import Reports from './pages/admin/Reports';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
+import CourseDetail from './pages/instructor/CourseDetail';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -42,6 +43,14 @@ function App() {
             element={
               <InstructorRoute>
                 <InstructorDashboard />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/course/:courseId"
+            element={
+              <InstructorRoute>
+                <CourseDetail />
               </InstructorRoute>
             }
           />

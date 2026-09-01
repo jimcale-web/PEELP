@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,6 +31,7 @@ async function fetchCategories(): Promise<Category[]> {
 
 export default function InstructorDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -82,6 +84,10 @@ export default function InstructorDashboard() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCourseClick = (courseId: string) => {
+    navigate(`/instructor/course/${courseId}`);
   };
 
   return (
@@ -185,7 +191,7 @@ export default function InstructorDashboard() {
             </thead>
             <tbody>
               {courses.map((course) => (
-                <tr key={course.id}>
+                <tr key={course.id} onClick={() => handleCourseClick(course.id)} style={{ cursor: 'pointer' }}>
                   <td>
                     <strong>{course.title}</strong>
                     <div>{course.description || 'No description provided.'}</div>

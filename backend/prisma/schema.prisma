@@ -98,11 +98,57 @@ model Course {
   instructor   User?     @relation(fields: [instructorId], references: [id], onDelete: SetNull)
   categoryId   String?
   category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sections     Section[]
   createdAt    DateTime
   updatedAt    DateTime
   deletedAt    DateTime?
 
   @@map("course")
+}
+
+model Section {
+  id          String    @id
+  title       String
+  description String?
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+  lessons     Lesson[]
+  createdAt   DateTime
+  updatedAt   DateTime
+  deletedAt   DateTime?
+
+  @@map("section")
+}
+
+model Lesson {
+  id          String    @id
+  title       String
+  description String?
+  sectionId   String
+  section     Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+  resources   Resource[]
+  createdAt   DateTime
+  updatedAt   DateTime
+  deletedAt   DateTime?
+
+  @@map("lesson")
+}
+
+model Resource {
+  id        String    @id
+  type      String    @default("LINK")
+  url       String?
+  isFree    Boolean   @default(false)
+  lessonId  String
+  lesson    Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  order     Int       @default(0)
+  createdAt DateTime
+  updatedAt DateTime
+  deletedAt DateTime?
+
+  @@map("resource")
 }
 
 model Category {
