@@ -153,7 +153,7 @@ describe('Reports', () => {
 
     it('displays all table headers', () => {
       renderReports();
-      const thead = document.querySelector('.table-panel thead');
+      const thead = document.querySelector<HTMLElement>('.table-panel thead');
       expect(within(thead!).getByText('Course')).toBeInTheDocument();
       expect(within(thead!).getByText('Enrollments')).toBeInTheDocument();
       expect(within(thead!).getByText('Completion')).toBeInTheDocument();
@@ -171,7 +171,7 @@ describe('Reports', () => {
     it('displays correct enrollment numbers', () => {
       renderReports();
       const tbody = document.querySelector('.table-panel tbody');
-      const rows = tbody!.querySelectorAll('tr');
+      const rows = tbody!.querySelectorAll<HTMLElement>('tr');
       
       expect(rows.length).toBe(4);
       expect(within(rows[0]).getByText('146')).toBeInTheDocument();
@@ -182,7 +182,7 @@ describe('Reports', () => {
 
     it('displays correct completion percentages', () => {
       renderReports();
-      const tbody = document.querySelector('.table-panel tbody');
+      const tbody = document.querySelector<HTMLElement>('.table-panel tbody');
       expect(within(tbody!).getByText('82%')).toBeInTheDocument();
       expect(within(tbody!).getByText('76%')).toBeInTheDocument();
       expect(within(tbody!).getByText('74%')).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe('Reports', () => {
 
     it('displays correct revenue values', () => {
       renderReports();
-      const tbody = document.querySelector('.table-panel tbody');
+      const tbody = document.querySelector<HTMLElement>('.table-panel tbody');
       expect(within(tbody!).getByText('$18.4K')).toBeInTheDocument();
       expect(within(tbody!).getByText('$15.1K')).toBeInTheDocument();
       expect(within(tbody!).getByText('$13.9K')).toBeInTheDocument();

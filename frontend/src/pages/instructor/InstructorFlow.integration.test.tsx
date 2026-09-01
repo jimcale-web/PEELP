@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import InstructorDashboard from './InstructorDashboard';
@@ -72,7 +72,6 @@ function renderInstructorFlow() {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('Instructor Course Flow: Create Course and Add Sections', () => {
-  let createdCourseId: string;
   const newCourse = {
     id: 'course-2',
     title: 'Advanced TypeScript',
@@ -85,8 +84,6 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
   };
 
   beforeEach(() => {
-    createdCourseId = newCourse.id;
-
     // Set up default handlers
     server.use(
       http.get('http://localhost:5000/api/instructor/courses', () =>
@@ -96,7 +93,7 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
         HttpResponse.json({ categories: mockCategories }),
       ),
       http.post('http://localhost:5000/api/instructor/courses', async ({ request }) => {
-        const body = await request.json();
+        const body = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json(
           {
             course: {
@@ -117,7 +114,7 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
       ),
       http.post('http://localhost:5000/api/instructor/courses/:courseId/sections', 
         async ({ request }) => {
-          const body = await request.json();
+          const body = (await request.json()) as Record<string, unknown>;
           return HttpResponse.json(
             {
               section: {
@@ -250,7 +247,7 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
         http.put(
           'http://localhost:5000/api/instructor/courses/:courseId/sections/:sectionId',
           async ({ request }) => {
-            const body = await request.json();
+            const body = (await request.json()) as Record<string, unknown>;
             return HttpResponse.json({
               section: {
                 ...existingSection,

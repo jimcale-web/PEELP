@@ -1,9 +1,11 @@
 .admin-tabs-bar {
   position: relative;
+  flex-shrink: 0;
   background: white;
   border-bottom: 1px solid #dfe3ee;
   box-shadow: inset 0 -1px 0 rgba(223, 227, 238, 0.9);
   overflow-x: auto;
+  overflow-y: hidden;
   /* Hide scrollbar but keep functionality */
   scrollbar-width: none;
   -ms-overflow-style: none;

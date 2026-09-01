@@ -1,7 +1,7 @@
 /* Student List Page */
 .student-list-container {
   min-height: calc(100vh - 70px - 47px);
-  background: linear-gradient(135deg, #f0f4ff 0%, #c8d8f0 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 40px 20px;
   display: flex;
   justify-content: center;
@@ -21,7 +21,7 @@
 .student-list-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 28px;
 }
 
@@ -29,7 +29,7 @@
   font-size: 26px;
   font-weight: 700;
   color: #333;
-  margin: 0 0 4px;
+  margin: 0;
 }
 
 .student-list-header p {
@@ -40,6 +40,13 @@
 
 /* Toolbar */
 .student-list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+/* Filters */
+.student-list-filters {
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
@@ -68,7 +75,7 @@
 /* Add Student button */
 .btn-new-student {
   padding: 9px 18px;
-  background: linear-gradient(135deg, #43a8f0, #1565c0);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
   border-radius: 8px;
@@ -81,7 +88,7 @@
 
 .btn-new-student:hover {
   opacity: 0.9;
-  box-shadow: 0 4px 14px rgba(67, 168, 240, 0.4);
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
 }
 
 /* Table */
@@ -133,7 +140,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #43a8f0, #1565c0);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   font-size: 14px;
   font-weight: 700;
@@ -240,7 +247,7 @@
 }
 
 .duration-btn--active.duration-btn--yearly {
-  background: linear-gradient(135deg, #43a8f0, #1565c0);
+  background: linear-gradient(135deg, #764ba2, #4f35a3);
 }
 
 .duration-btn:disabled {
@@ -262,7 +269,8 @@
 
   .student-list-header {
     flex-direction: column;
-    gap: 12px;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .student-list-header h1 {
@@ -284,7 +292,7 @@
     border-radius: 8px;
   }
 
-  .student-list-toolbar {
+  .student-list-filters {
     flex-direction: column;
   }
 

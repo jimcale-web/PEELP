@@ -70,6 +70,7 @@ const formatNumberValue = (value: string | number | ReadonlyArray<string | numbe
 export default function Reports() {
   return (
     <div className="reports-page">
+      <div className="reports-inner">
       <div className="reports-header">
         <div>
           <p className="eyebrow">Performance overview</p>
@@ -225,6 +226,7 @@ export default function Reports() {
           </ResponsiveContainer>
         </div>
       </section>
+      </div>
     </div>
   );
 }

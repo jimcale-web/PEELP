@@ -82,17 +82,18 @@ export default function StudentList() {
       <div className="student-list-card">
         {/* Header */}
         <div className="student-list-header">
-          <div>
-            <h1>Student Management</h1>
-            {!isLoading && (
-              <p>
-                {students.length} total &nbsp;·&nbsp; {activeCount} active
-                {pendingCount > 0 && (
-                  <span className="pending-badge">{pendingCount} pending</span>
-                )}
-              </p>
-            )}
-          </div>
+          <h1>Student Management</h1>
+          {!isLoading && (
+            <p>
+              {students.length} total &nbsp;·&nbsp; {activeCount} active
+              {pendingCount > 0 && (
+                <span className="pending-badge">{pendingCount} pending</span>
+              )}
+            </p>
+          )}
+        </div>
+
+        <div className="student-list-toolbar">
           <button className="btn-new-student" onClick={() => setShowCreateModal(true)}>
             + Add Student
           </button>
@@ -100,8 +101,8 @@ export default function StudentList() {
 
         {showCreateModal && <CreateStudentModal onClose={() => setShowCreateModal(false)} />}
 
-        {/* Toolbar */}
-        <div className="student-list-toolbar" style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
+        {/* Filters */}
+        <div className="student-list-filters" style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
           <input
             type="text"
             className="student-search-input"

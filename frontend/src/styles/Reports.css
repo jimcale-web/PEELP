@@ -1,7 +1,12 @@
 .reports-page {
+  min-height: calc(100vh - 70px - 47px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 40px 20px 56px;
+}
+
+.reports-inner {
   max-width: 1200px;
-  margin: 32px auto 56px;
-  padding: 14px 20px;
+  margin: 0 auto;
 }
 
 .reports-header {
@@ -170,20 +175,20 @@
   overflow-x: auto;
 }
 
-table {
+.reports-inner table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th,
-td {
+.reports-inner th,
+.reports-inner td {
   padding: 12px 10px;
   text-align: left;
   border-bottom: 1px solid #eef2f7;
   color: #334155;
 }
 
-th {
+.reports-inner th {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -206,6 +211,10 @@ th {
 
 @media (max-width: 560px) {
   .reports-page {
+    padding: 20px 0 40px;
+  }
+
+  .reports-inner {
     padding: 0 14px;
   }
 
