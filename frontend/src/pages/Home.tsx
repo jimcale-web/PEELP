@@ -13,6 +13,10 @@ export default function Home() {
     return <Navigate to="/instructor" replace />;
   }
 
+  if (user?.role === 'STUDENT') {
+    return <Navigate to="/student/courses" replace />;
+  }
+
   return (
     <div className="home-container">
       <div className="welcome-card">

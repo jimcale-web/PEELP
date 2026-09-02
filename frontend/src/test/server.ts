@@ -7,6 +7,7 @@ export const DELETE_USER_URL = USER_URL; // DELETE uses the same URL pattern
 
 export const CATEGORIES_URL = 'http://localhost:5000/api/admin/categories';
 export const CATEGORY_URL = (id: string) => `http://localhost:5000/api/admin/categories/${id}`;
+export const STUDENT_COURSES_URL = 'http://localhost:5000/api/student/courses';
 
 export const mockUsers = [
   {
@@ -74,9 +75,29 @@ export const mockCategories = [
   },
 ];
 
+export const mockStudentCourses = [
+  {
+    id: 'course-1',
+    title: 'Introduction to Python',
+    description: 'Learn Python fundamentals.',
+    category: { id: 'cat-1', name: 'Programming' },
+    instructor: { id: 'instructor-1', name: 'Bob Instructor' },
+    _count: { sections: 3 },
+  },
+  {
+    id: 'course-2',
+    title: 'Design Fundamentals',
+    description: null,
+    category: null,
+    instructor: null,
+    _count: { sections: 1 },
+  },
+];
+
 export const handlers = [
   http.get(USERS_URL, () => HttpResponse.json({ users: mockUsers })),
   http.get(CATEGORIES_URL, () => HttpResponse.json({ categories: mockCategories })),
+  http.get(STUDENT_COURSES_URL, () => HttpResponse.json({ courses: mockStudentCourses })),
 ];
 
 export const server = setupServer(...handlers);

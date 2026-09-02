@@ -9,6 +9,7 @@ import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { requireAuth } from './middleware/require-auth.js';
 import { requireAdmin } from './middleware/require-admin.js';
 import { requireInstructor } from './middleware/require-instructor.js';
+import { requireStudent } from './middleware/require-student.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { asyncHandler } from './lib/async-handler.js';
 import { prisma } from './lib/prisma.js';
@@ -541,6 +542,128 @@ app.get('/api/admin/courses', requireAuth, requireAdmin, asyncHandler(async (_re
     orderBy: { createdAt: 'desc' },
   });
   res.json({ courses });
+}));
+
+// Returns whether a student currently has an active subscription (unexpired access window).
+function hasActiveAccess(accessExpiresAt: Date | null): boolean {
+  return !!accessExpiresAt && accessExpiresAt.getTime() > Date.now();
+}
+
+// Student: browse available courses without exposing administrative fields.
+app.get('/api/student/courses', requireAuth, requireStudent, asyncHandler(async (_req, res) => {
+  const courses = await prisma.course.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructor: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true } },
+      _count: { select: { sections: { where: { deletedAt: null } } } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ courses });
+}));
+
+// Student: get a single course's details for the lesson player header.
+app.get('/api/student/courses/:courseId', requireAuth, requireStudent, asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+
+  const course = await prisma.course.findFirst({
+    where: { id: courseId, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructor: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!course) {
+    res.status(404).json({ error: 'Course not found.' });
+    return;
+  }
+
+  const student = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    select: { accessExpiresAt: true },
+  });
+
+  res.json({ course, hasAccess: hasActiveAccess(student?.accessExpiresAt ?? null) });
+}));
+
+// Student: get the full course curriculum (sections → lessons → resources) for the lesson player.
+// Resources are locked unless the student has an active subscription, except free-preview videos.
+app.get('/api/student/courses/:courseId/sections', requireAuth, requireStudent, asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+
+  const course = await prisma.course.findFirst({
+    where: { id: courseId, deletedAt: null },
+    select: { id: true },
+  });
+
+  if (!course) {
+    res.status(404).json({ error: 'Course not found.' });
+    return;
+  }
+
+  const student = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    select: { accessExpiresAt: true },
+  });
+  const hasAccess = hasActiveAccess(student?.accessExpiresAt ?? null);
+
+  const sections = await prisma.section.findMany({
+    where: { courseId, deletedAt: null },
+    orderBy: { order: 'asc' },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      order: true,
+      lessons: {
+        where: { deletedAt: null },
+        orderBy: { order: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          order: true,
+          resources: {
+            where: { deletedAt: null },
+            orderBy: { order: 'asc' },
+            select: {
+              id: true,
+              type: true,
+              url: true,
+              isFree: true,
+              order: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Strip the URL from any resource the student isn't entitled to view yet.
+  const lockedSections = sections.map((section) => ({
+    ...section,
+    lessons: section.lessons.map((lesson) => ({
+      ...lesson,
+      resources: lesson.resources.map((resource) => {
+        const unlocked = hasAccess || resource.isFree;
+        return {
+          ...resource,
+          url: unlocked ? resource.url : null,
+          locked: !unlocked,
+        };
+      }),
+    })),
+  }));
+
+  res.json({ sections: lockedSections, hasAccess });
 }));
 
 const courseSchema = z.object({

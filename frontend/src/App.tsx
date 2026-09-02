@@ -18,6 +18,8 @@ import CategoryList from './pages/admin/CategoryList';
 import Reports from './pages/admin/Reports';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import CourseDetail from './pages/instructor/CourseDetail';
+import CourseCatalog from './pages/student/CourseCatalog';
+import LessonPlayer from './pages/student/LessonPlayer';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -52,6 +54,22 @@ function App() {
               <InstructorRoute>
                 <CourseDetail />
               </InstructorRoute>
+            }
+          />
+          <Route
+            path="/student/courses"
+            element={
+              <ProtectedRoute>
+                <CourseCatalog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/course/:courseId"
+            element={
+              <ProtectedRoute>
+                <LessonPlayer />
+              </ProtectedRoute>
             }
           />
           <Route

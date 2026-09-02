@@ -18,6 +18,11 @@ export default function Navbar() {
     }
   };
 
+  const goToCoursePlayer = () => {
+    const lastCourseId = localStorage.getItem('student:lastCourseId');
+    navigate(lastCourseId ? `/student/course/${lastCourseId}` : '/student/courses');
+  };
+
   // Don't show navbar on login page
   if (location.pathname === '/login') {
     return null;
@@ -42,6 +47,14 @@ export default function Navbar() {
           )}
           {(user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN') && (
             <Link to="/instructor" className="nav-link">Instructor</Link>
+          )}
+          {user?.role === 'STUDENT' && (
+            <>
+              <Link to="/student/courses" className="nav-link">Courses</Link>
+              <button type="button" onClick={goToCoursePlayer} className="nav-link nav-link-button">
+                Course Player
+              </button>
+            </>
           )}
         </div>
 
@@ -82,6 +95,14 @@ export default function Navbar() {
           )}
           {(user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN') && (
             <Link to="/instructor" className="nav-link-mobile">Instructor</Link>
+          )}
+          {user?.role === 'STUDENT' && (
+            <>
+              <Link to="/student/courses" className="nav-link-mobile">Courses</Link>
+              <button type="button" onClick={goToCoursePlayer} className="nav-link-mobile nav-link-mobile-button">
+                Course Player
+              </button>
+            </>
           )}
           {user && (
             <>
