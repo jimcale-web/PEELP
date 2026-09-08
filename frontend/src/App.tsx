@@ -56,14 +56,7 @@ function App() {
               </InstructorRoute>
             }
           />
-          <Route
-            path="/student/courses"
-            element={
-              <ProtectedRoute>
-                <CourseCatalog />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/student/courses" element={<CourseCatalog />} />
           <Route
             path="/student/course/:courseId"
             element={

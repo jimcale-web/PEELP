@@ -271,6 +271,33 @@ test.describe('Student Management — approval', () => {
     await expect(row.getByText('✓ Approved')).toBeVisible();
   });
 
+  test('approving a pending student without a subscription succeeds', async ({ request }) => {
+    const email = testEmail('approve-no-plan');
+    await request.post(`${API_URL}/register`, {
+      data: {
+        name: 'No Plan Student',
+        email,
+        password: 'Password123',
+        city: 'Alexandria',
+        country: 'Egypt',
+        phoneNumber: '+20 111 222 333',
+      },
+    });
+
+    const studentsResponse = await request.get(`${API_URL}/admin/students`);
+    expect(studentsResponse.ok()).toBeTruthy();
+    const students = await studentsResponse.json();
+    const student = students.students.find((entry: { email: string }) => entry.email === email);
+    expect(student).toBeTruthy();
+
+    const approvalResponse = await request.patch(`${API_URL}/admin/students/${student.id}/approval`, {
+      data: { approvalStatus: 'APPROVED' },
+    });
+
+    expect(approvalResponse.ok()).toBeTruthy();
+    expect((await approvalResponse.json()).student.approvalStatus).toBe('APPROVED');
+  });
+
   test('rejecting a pending student replaces buttons with Rejected pill', async ({ page, request }) => {
     const email = testEmail('to-reject');
     await request.post(`${API_URL}/register`, {

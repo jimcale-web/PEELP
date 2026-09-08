@@ -14,7 +14,8 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isSessionCheck = error.config?.url?.includes('/auth/get-session');
+    if (error.response?.status === 401 && !isSessionCheck) {
       // Clear any stored token and redirect to login
       localStorage.removeItem('authToken');
       window.location.href = '/login';

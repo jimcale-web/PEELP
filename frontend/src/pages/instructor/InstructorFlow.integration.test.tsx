@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import InstructorDashboard from './InstructorDashboard';
 import CourseDetail from './CourseDetail';
 import { server } from '../../test/server';
+import { AuthProvider } from '../../contexts/AuthContext';
 
 // ─── Mock data ─────────────────────────────────────────────────────────────
 
@@ -49,7 +50,9 @@ function renderInstructorFlow() {
         path: '/instructor',
         element: (
           <QueryClientProvider client={queryClient}>
-            <InstructorDashboard />
+            <AuthProvider>
+              <InstructorDashboard />
+            </AuthProvider>
           </QueryClientProvider>
         ),
       },
@@ -57,7 +60,9 @@ function renderInstructorFlow() {
         path: '/instructor/course/:courseId',
         element: (
           <QueryClientProvider client={queryClient}>
-            <CourseDetail />
+            <AuthProvider>
+              <CourseDetail />
+            </AuthProvider>
           </QueryClientProvider>
         ),
       },
@@ -84,51 +89,75 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
   };
 
   beforeEach(() => {
+    const courses = [...mockCourses];
+    const sections: Record<string, Array<Record<string, unknown>>> = {};
+
     // Set up default handlers
     server.use(
+      http.get('http://localhost:5000/api/auth/get-session', () =>
+        HttpResponse.json({
+          user: {
+            id: 'instructor-1',
+            name: 'John',
+            email: 'john@example.com',
+            role: 'INSTRUCTOR',
+            approvalStatus: 'APPROVED',
+          },
+        }),
+      ),
       http.get('http://localhost:5000/api/instructor/courses', () =>
-        HttpResponse.json({ courses: mockCourses }),
+        HttpResponse.json({ courses }),
       ),
       http.get('http://localhost:5000/api/instructor/categories', () =>
         HttpResponse.json({ categories: mockCategories }),
       ),
       http.post('http://localhost:5000/api/instructor/courses', async ({ request }) => {
-        const body = (await request.json()) as Record<string, unknown>;
+        const formData = await request.formData();
+        const body = Object.fromEntries(formData.entries());
+        const course = {
+          ...newCourse,
+          ...body,
+          category: mockCategories.find((category) => category.id === body.categoryId) ?? mockCategories[0],
+        };
+        courses.push(course);
         return HttpResponse.json(
-          {
-            course: {
-              ...newCourse,
-              ...body,
-            },
-          },
+          { course },
           { status: 201 },
         );
       }),
       http.get('http://localhost:5000/api/instructor/courses/:courseId', ({ params }) => {
         const { courseId } = params;
-        const course = courseId === 'course-1' ? mockCourses[0] : newCourse;
+        const course = courses.find((item) => item.id === courseId) ?? newCourse;
         return HttpResponse.json({ course });
       }),
-      http.get('http://localhost:5000/api/instructor/courses/:courseId/sections', () =>
-        HttpResponse.json({ sections: [] }),
+      http.get('http://localhost:5000/api/instructor/courses/:courseId/sections', ({ params }) =>
+        HttpResponse.json({ sections: sections[String(params.courseId)] ?? [] }),
       ),
       http.post('http://localhost:5000/api/instructor/courses/:courseId/sections', 
         async ({ request }) => {
           const body = (await request.json()) as Record<string, unknown>;
+          const courseId = String(request.url.match(/courses\/([^/]+)\/sections/)?.[1]);
+          const section = {
+            id: `section-${Date.now()}`,
+            ...body,
+            order: Number(body.order ?? 0),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          sections[courseId] = [...(sections[courseId] ?? []), section];
           return HttpResponse.json(
-            {
-              section: {
-                id: 'section-new',
-                ...body,
-                order: 0,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              },
-            },
+            { section },
             { status: 201 },
           );
         },
       ),
+      http.delete('http://localhost:5000/api/instructor/courses/:courseId/sections/:sectionId', ({ params }) => {
+        const courseId = String(params.courseId);
+        sections[courseId] = (sections[courseId] ?? []).filter(
+          (section) => section.id !== params.sectionId,
+        );
+        return HttpResponse.json({ message: 'Section deleted' });
+      }),
     );
   });
 
@@ -166,7 +195,7 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
 
       // Step 5: Wait for course to be created and list updated
       await waitFor(() => {
-        expect(screen.getByText(/close form/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create course/i })).toBeInTheDocument();
       });
 
       // Step 6: Find and click on the newly created course
@@ -240,21 +269,21 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
         updatedAt: new Date().toISOString(),
       };
 
+      let sections = [existingSection];
       server.use(
         http.get('http://localhost:5000/api/instructor/courses/:courseId/sections', () =>
-          HttpResponse.json({ sections: [existingSection] }),
+          HttpResponse.json({ sections }),
         ),
         http.put(
           'http://localhost:5000/api/instructor/courses/:courseId/sections/:sectionId',
           async ({ request }) => {
             const body = (await request.json()) as Record<string, unknown>;
-            return HttpResponse.json({
-              section: {
-                ...existingSection,
-                ...body,
-                updatedAt: new Date().toISOString(),
-              },
-            });
+            sections = [{
+              ...existingSection,
+              ...body,
+              updatedAt: new Date().toISOString(),
+            }];
+            return HttpResponse.json({ section: sections[0] });
           },
         ),
       );
@@ -306,16 +335,17 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
         updatedAt: new Date().toISOString(),
       };
 
+      let deleted = false;
       server.use(
         http.get('http://localhost:5000/api/instructor/courses/:courseId/sections', () =>
-          HttpResponse.json({ sections: [existingSection] }),
+          HttpResponse.json({ sections: deleted ? [] : [existingSection] }),
         ),
         http.delete(
           'http://localhost:5000/api/instructor/courses/:courseId/sections/:sectionId',
-          () => HttpResponse.json({ deleted: true, title: 'Section to Delete' }),
-        ),
-        http.get('http://localhost:5000/api/instructor/courses/:courseId/sections', () =>
-          HttpResponse.json({ sections: [] }),
+          () => {
+            deleted = true;
+            return HttpResponse.json({ deleted: true, title: 'Section to Delete' });
+          },
         ),
       );
 

@@ -7,7 +7,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: './src/test/setup.ts',
+    setupFiles: ['./src/test/polyfills.ts', './src/test/setup.ts'],
     pool: 'forks',
     testTimeout: 30_000,
     hookTimeout: 30_000,

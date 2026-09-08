@@ -13,6 +13,9 @@ import { requireStudent } from './middleware/require-student.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { asyncHandler } from './lib/async-handler.js';
 import { prisma } from './lib/prisma.js';
+import { uploadThumbnail, uploadsDir } from './middleware/upload.js';
+import path from 'path';
+import fs from 'fs';
 
 
 const app = express();
@@ -74,10 +77,27 @@ app.all('/api/auth/*', (req, res, next) => {
   toNodeHandler(auth)(req, res).catch(next);
 });
 app.use(express.json());
+// Serve uploaded thumbnail images
+app.use('/uploads/thumbnails', express.static(uploadsDir));
 // Health check route
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', message: 'PEELP Backend is running' });
 });
+
+// Public: categories available to students during self-registration.
+app.get('/api/categories', asyncHandler(async (_req, res) => {
+  const categories = await prisma.category.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  res.json({ categories });
+}));
 
 app.get("/api/me", requireAuth, (req, res) => {
   res.json({ user: req.user, session: req.session });
@@ -90,6 +110,7 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters.'),
   city: z.string().min(1, 'City is required.'),
   country: z.string().min(1, 'Country is required.'),
+  categoryId: z.string().min(1, 'Please select a category to enroll in.'),
   phoneNumber: z
     .string()
     .min(7, 'Phone number must be at least 7 characters.')
@@ -104,11 +125,20 @@ app.post('/api/register', asyncHandler(async (req, res) => {
     return;
   }
 
-  const { name, email, password, city, country, phoneNumber } = parsed.data;
+  const { name, email, password, city, country, phoneNumber, categoryId } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     res.status(409).json({ error: 'An account with that email already exists.' });
+    return;
+  }
+
+  const category = await prisma.category.findFirst({
+    where: { id: categoryId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!category) {
+    res.status(400).json({ error: 'The selected enrollment category is no longer available.' });
     return;
   }
 
@@ -128,6 +158,7 @@ app.post('/api/register', asyncHandler(async (req, res) => {
       city,
       country,
       phoneNumber,
+      enrolledCategoryId: category.id,
       createdAt: now,
       updatedAt: now,
       accounts: {
@@ -415,6 +446,8 @@ app.get('/api/admin/students', requireAuth, requireAdmin, asyncHandler(async (_r
       city: true,
       country: true,
       phoneNumber: true,
+      enrolledCategoryId: true,
+      enrolledCategory: { select: { id: true, name: true } },
       accessDuration: true,
       accessExpiresAt: true,
       createdAt: true,
@@ -424,6 +457,17 @@ app.get('/api/admin/students', requireAuth, requireAdmin, asyncHandler(async (_r
   });
   res.json({ students });
 }));
+
+// Computes an access expiry timestamp "duration" from now (MONTHLY → +1 month, YEARLY → +1 year).
+function computeAccessExpiresAt(duration: 'MONTHLY' | 'YEARLY', from: Date): Date {
+  const expiresAt = new Date(from);
+  if (duration === 'MONTHLY') {
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+  } else {
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+  }
+  return expiresAt;
+}
 
 // Admin: set / update a student's accessibility duration (MONTHLY or YEARLY).
 // Each call resets the expiry from "now": +1 month for MONTHLY, +1 year for YEARLY.
@@ -452,12 +496,7 @@ app.patch('/api/admin/students/:id/access', requireAuth, requireAdmin, asyncHand
   }
 
   const now = new Date();
-  const accessExpiresAt = new Date(now);
-  if (accessDuration === 'MONTHLY') {
-    accessExpiresAt.setMonth(accessExpiresAt.getMonth() + 1);
-  } else {
-    accessExpiresAt.setFullYear(accessExpiresAt.getFullYear() + 1);
-  }
+  const accessExpiresAt = computeAccessExpiresAt(accessDuration, now);
 
   const student = await prisma.user.update({
     where: { id },
@@ -471,6 +510,8 @@ app.patch('/api/admin/students/:id/access', requireAuth, requireAdmin, asyncHand
       city: true,
       country: true,
       phoneNumber: true,
+      enrolledCategoryId: true,
+      enrolledCategory: { select: { id: true, name: true } },
       accessDuration: true,
       accessExpiresAt: true,
       createdAt: true,
@@ -481,15 +522,25 @@ app.patch('/api/admin/students/:id/access', requireAuth, requireAdmin, asyncHand
   res.json({ student });
 }));
 
-// Admin: approve or reject a student
-app.patch('/api/admin/students/:id/approval', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { approvalStatus } = req.body;
+// Admin: approve or reject a student.
+// Approval is independent from a subscription plan. If a duration is supplied, it
+// is applied immediately; otherwise the student can be approved without setting an
+// access window at this stage.
+const setApprovalSchema = z.object({
+  approvalStatus: z.enum(['APPROVED', 'REJECTED']),
+  accessDuration: z.enum(['MONTHLY', 'YEARLY']).optional(),
+});
 
-  if (approvalStatus !== 'APPROVED' && approvalStatus !== 'REJECTED') {
-    res.status(400).json({ error: 'approvalStatus must be APPROVED or REJECTED.' });
+app.patch('/api/admin/students/:id/approval', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = setApprovalSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
     return;
   }
+
+  const { id } = req.params;
+  const { approvalStatus, accessDuration } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { id } });
   if (!existing) {
@@ -501,9 +552,17 @@ app.patch('/api/admin/students/:id/approval', requireAuth, requireAdmin, asyncHa
     return;
   }
 
+  const now = new Date();
   const student = await prisma.user.update({
     where: { id },
-    data: { approvalStatus, updatedAt: new Date() },
+    data: {
+      approvalStatus,
+      updatedAt: now,
+      // Grant category-scoped access for the chosen duration on approval.
+      ...(approvalStatus === 'APPROVED' && accessDuration
+        ? { accessDuration, accessExpiresAt: computeAccessExpiresAt(accessDuration, now) }
+        : {}),
+    },
     select: {
       id: true,
       name: true,
@@ -514,6 +573,8 @@ app.patch('/api/admin/students/:id/approval', requireAuth, requireAdmin, asyncHa
       city: true,
       country: true,
       phoneNumber: true,
+      enrolledCategoryId: true,
+      enrolledCategory: { select: { id: true, name: true } },
       accessDuration: true,
       accessExpiresAt: true,
       createdAt: true,
@@ -549,6 +610,35 @@ function hasActiveAccess(accessExpiresAt: Date | null): boolean {
   return !!accessExpiresAt && accessExpiresAt.getTime() > Date.now();
 }
 
+// A student's access grant only unlocks courses within their enrolled category.
+function hasActiveAccessForCategory(
+  student: { accessExpiresAt: Date | null; enrolledCategoryId: string | null },
+  courseCategoryId: string | null,
+): boolean {
+  if (!hasActiveAccess(student.accessExpiresAt)) {
+    return false;
+  }
+  // A student with no enrolled category, or a course with no category, can't be matched.
+  return !!student.enrolledCategoryId && student.enrolledCategoryId === courseCategoryId;
+}
+
+// Public: browse available courses without exposing administrative fields or requiring login.
+app.get('/api/public/courses', asyncHandler(async (_req, res) => {
+  const courses = await prisma.course.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructor: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true } },
+      _count: { select: { sections: { where: { deletedAt: null } } } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ courses });
+}));
+
 // Student: browse available courses without exposing administrative fields.
 app.get('/api/student/courses', requireAuth, requireStudent, asyncHandler(async (_req, res) => {
   const courses = await prisma.course.findMany({
@@ -577,6 +667,7 @@ app.get('/api/student/courses/:courseId', requireAuth, requireStudent, asyncHand
       title: true,
       description: true,
       instructor: { select: { id: true, name: true } },
+      categoryId: true,
       category: { select: { id: true, name: true } },
     },
   });
@@ -588,20 +679,26 @@ app.get('/api/student/courses/:courseId', requireAuth, requireStudent, asyncHand
 
   const student = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    select: { accessExpiresAt: true },
+    select: { accessExpiresAt: true, enrolledCategoryId: true },
   });
 
-  res.json({ course, hasAccess: hasActiveAccess(student?.accessExpiresAt ?? null) });
+  res.json({
+    course,
+    hasAccess: hasActiveAccessForCategory(
+      { accessExpiresAt: student?.accessExpiresAt ?? null, enrolledCategoryId: student?.enrolledCategoryId ?? null },
+      course.categoryId,
+    ),
+  });
 }));
 
 // Student: get the full course curriculum (sections → lessons → resources) for the lesson player.
-// Resources are locked unless the student has an active subscription, except free-preview videos.
+// Resources are locked unless the student has an active subscription for the course's category, except free-preview videos.
 app.get('/api/student/courses/:courseId/sections', requireAuth, requireStudent, asyncHandler(async (req, res) => {
   const { courseId } = req.params;
 
   const course = await prisma.course.findFirst({
     where: { id: courseId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, categoryId: true },
   });
 
   if (!course) {
@@ -611,9 +708,12 @@ app.get('/api/student/courses/:courseId/sections', requireAuth, requireStudent, 
 
   const student = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    select: { accessExpiresAt: true },
+    select: { accessExpiresAt: true, enrolledCategoryId: true },
   });
-  const hasAccess = hasActiveAccess(student?.accessExpiresAt ?? null);
+  const hasAccess = hasActiveAccessForCategory(
+    { accessExpiresAt: student?.accessExpiresAt ?? null, enrolledCategoryId: student?.enrolledCategoryId ?? null },
+    course.categoryId,
+  );
 
   const sections = await prisma.section.findMany({
     where: { courseId, deletedAt: null },
@@ -813,6 +913,7 @@ app.get('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler(
       id: true,
       title: true,
       description: true,
+      thumbnailUrl: true,
       instructorId: true,
       instructor: { select: { id: true, name: true } },
       categoryId: true,
@@ -839,6 +940,7 @@ app.get('/api/instructor/courses/:courseId', requireAuth, requireInstructor, asy
       id: true,
       title: true,
       description: true,
+      thumbnailUrl: true,
       instructorId: true,
       instructor: { select: { id: true, name: true } },
       categoryId: true,
@@ -878,9 +980,12 @@ app.get('/api/instructor/categories', requireAuth, requireInstructor, asyncHandl
   res.json({ categories });
 }));
 
-app.post('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler(async (req, res) => {
+app.post('/api/instructor/courses', requireAuth, requireInstructor, uploadThumbnail.single('thumbnail'), asyncHandler(async (req, res) => {
   const parsed = courseSchema.safeParse(req.body);
   if (!parsed.success) {
+    if (req.file) {
+      fs.unlink(req.file.path, () => {});
+    }
     const message = parsed.error.issues.map((e) => e.message).join(' ');
     res.status(400).json({ error: message });
     return;
@@ -892,6 +997,9 @@ app.post('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler
   if (categoryId) {
     const cat = await prisma.category.findUnique({ where: { id: categoryId } });
     if (!cat || cat.deletedAt) {
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
       res.status(400).json({ error: 'Category not found.' });
       return;
     }
@@ -899,12 +1007,14 @@ app.post('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler
 
   const { randomUUID } = await import('crypto');
   const now = new Date();
+  const thumbnailUrl = req.file ? `/uploads/thumbnails/${req.file.filename}` : null;
 
   const course = await prisma.course.create({
     data: {
       id: randomUUID(),
       title,
       description: description || null,
+      thumbnailUrl,
       instructorId,
       categoryId: categoryId || null,
       createdAt: now,
@@ -914,6 +1024,7 @@ app.post('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler
       id: true,
       title: true,
       description: true,
+      thumbnailUrl: true,
       instructorId: true,
       instructor: { select: { id: true, name: true } },
       categoryId: true,
@@ -924,6 +1035,125 @@ app.post('/api/instructor/courses', requireAuth, requireInstructor, asyncHandler
   });
 
   res.status(201).json({ course });
+}));
+
+// Instructor: update a course (title/description/category and optionally thumbnail)
+app.patch('/api/instructor/courses/:courseId', requireAuth, requireInstructor, uploadThumbnail.single('thumbnail'), asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+
+  const existing = await prisma.course.findFirst({ where: { id: courseId, deletedAt: null } });
+  if (!existing) {
+    if (req.file) {
+      fs.unlink(req.file.path, () => {});
+    }
+    res.status(404).json({ error: 'Course not found.' });
+    return;
+  }
+
+  if (req.user?.role !== 'ADMIN' && existing.instructorId !== req.user!.id) {
+    if (req.file) {
+      fs.unlink(req.file.path, () => {});
+    }
+    res.status(403).json({ error: 'You do not have permission to edit this course.' });
+    return;
+  }
+
+  const parsed = courseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    if (req.file) {
+      fs.unlink(req.file.path, () => {});
+    }
+    const message = parsed.error.issues.map((e) => e.message).join(' ');
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  const { title, description, categoryId } = parsed.data;
+
+  if (categoryId) {
+    const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!cat || cat.deletedAt) {
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
+      res.status(400).json({ error: 'Category not found.' });
+      return;
+    }
+  }
+
+  let thumbnailUrl = existing.thumbnailUrl;
+  if (req.file) {
+    if (existing.thumbnailUrl) {
+      const oldPath = path.join(uploadsDir, path.basename(existing.thumbnailUrl));
+      fs.unlink(oldPath, () => {});
+    }
+    thumbnailUrl = `/uploads/thumbnails/${req.file.filename}`;
+  }
+
+  const course = await prisma.course.update({
+    where: { id: courseId },
+    data: {
+      title,
+      description: description || null,
+      thumbnailUrl,
+      categoryId: categoryId || null,
+      updatedAt: new Date(),
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      thumbnailUrl: true,
+      instructorId: true,
+      instructor: { select: { id: true, name: true } },
+      categoryId: true,
+      category: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  res.json({ course });
+}));
+
+// Instructor: delete a course's thumbnail image
+app.delete('/api/instructor/courses/:courseId/thumbnail', requireAuth, requireInstructor, asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+
+  const existing = await prisma.course.findFirst({ where: { id: courseId, deletedAt: null } });
+  if (!existing) {
+    res.status(404).json({ error: 'Course not found.' });
+    return;
+  }
+
+  if (req.user?.role !== 'ADMIN' && existing.instructorId !== req.user!.id) {
+    res.status(403).json({ error: 'You do not have permission to edit this course.' });
+    return;
+  }
+
+  if (existing.thumbnailUrl) {
+    const oldPath = path.join(uploadsDir, path.basename(existing.thumbnailUrl));
+    fs.unlink(oldPath, () => {});
+  }
+
+  const course = await prisma.course.update({
+    where: { id: courseId },
+    data: { thumbnailUrl: null, updatedAt: new Date() },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      thumbnailUrl: true,
+      instructorId: true,
+      instructor: { select: { id: true, name: true } },
+      categoryId: true,
+      category: { select: { id: true, name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  res.json({ course });
 }));
 
 // Instructor: get sections for a course

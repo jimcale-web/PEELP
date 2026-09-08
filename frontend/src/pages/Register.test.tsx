@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Register from './Register';
 import { server } from '../test/server';
 
@@ -20,7 +21,14 @@ function renderRegister() {
     ],
     { initialEntries: ['/register'] },
   );
-  render(<RouterProvider router={router} />);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
   return router;
 }
 
@@ -30,6 +38,8 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Phone Number'), '+254 712 345 678');
   await user.type(screen.getByLabelText('City'), 'Nairobi');
   await user.type(screen.getByLabelText('Country'), 'Kenya');
+  await screen.findByRole('option', { name: 'Programming' });
+  await user.selectOptions(screen.getByLabelText('Category to enroll in'), 'cat-1');
   await user.type(screen.getByLabelText('Email'), 'test@example.com');
   await user.type(screen.getByLabelText('Password'), 'Password123');
   await user.type(screen.getByLabelText('Confirm Password'), 'Password123');
@@ -51,6 +61,7 @@ describe('Register', () => {
       expect(screen.getByLabelText('Phone Number')).toBeInTheDocument();
       expect(screen.getByLabelText('City')).toBeInTheDocument();
       expect(screen.getByLabelText('Country')).toBeInTheDocument();
+      expect(screen.getByLabelText('Category to enroll in')).toBeInTheDocument();
       expect(screen.getByLabelText('Email')).toBeInTheDocument();
       expect(screen.getByLabelText('Password')).toBeInTheDocument();
       expect(screen.getByLabelText('Confirm Password')).toBeInTheDocument();
@@ -89,6 +100,7 @@ describe('Register', () => {
       expect(screen.getByText('Please enter a valid phone number (at least 7 digits).')).toBeInTheDocument();
       expect(screen.getByText('Please enter your city.')).toBeInTheDocument();
       expect(screen.getByText('Please enter your country.')).toBeInTheDocument();
+      expect(screen.getByText('Please select a category to enroll in.')).toBeInTheDocument();
       expect(screen.getByText('Please enter a valid email address.')).toBeInTheDocument();
       expect(screen.getByText('Your password must be at least 8 characters long.')).toBeInTheDocument();
       expect(screen.getByText('Please confirm your password.')).toBeInTheDocument();
@@ -276,6 +288,7 @@ describe('Register', () => {
         phoneNumber: '+254 712 345 678',
         city: 'Nairobi',
         country: 'Kenya',
+        categoryId: 'cat-1',
         email: 'test@example.com',
         password: 'Password123',
       });
@@ -314,6 +327,8 @@ describe('Register', () => {
       await user.type(screen.getByLabelText('Phone Number'), '+254 712 345 678');
       await user.type(screen.getByLabelText('City'), '  Nairobi  ');
       await user.type(screen.getByLabelText('Country'), '  Kenya  ');
+      await screen.findByRole('option', { name: 'Programming' });
+      await user.selectOptions(screen.getByLabelText('Category to enroll in'), 'cat-1');
       await user.type(screen.getByLabelText('Email'), '  test@example.com  ');
       await user.type(screen.getByLabelText('Password'), 'Password123');
       await user.type(screen.getByLabelText('Confirm Password'), 'Password123');

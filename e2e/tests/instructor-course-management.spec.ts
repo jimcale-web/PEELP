@@ -1,4 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+
+const ADMIN_EMAIL = 'admin@example.com';
+const ADMIN_PASSWORD = 'password123';
 import path from 'path';
 
 /**
@@ -16,7 +19,7 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
-function testCourseTitle(prefix: string) {
+function testCourseTitle(prefix = 'course') {
   return `${prefix}-${uid()}`;
 }
 
@@ -58,6 +61,25 @@ async function createCourse(page: Page, opts: { title: string; description?: str
   await expect(page.getByText(title)).toBeVisible();
 }
 
+async function createInstructorAccount(page: Page) {
+  const email = `instructor-${uid()}@e2e-test.example`;
+  const password = 'Password123';
+
+  await page.goto('/admin/users');
+  await expect(page.getByRole('heading', { name: 'User Management' })).toBeVisible();
+  await page.getByRole('button', { name: '+ New User' }).click();
+
+  const modal = page.locator('.modal-card');
+  await modal.getByLabel('Full Name').fill('E2E Instructor');
+  await modal.getByLabel('Email').fill(email);
+  await modal.getByLabel('Password').fill(password);
+  await modal.getByLabel('Role').selectOption('INSTRUCTOR');
+  await modal.getByRole('button', { name: 'Create User' }).click();
+  await expect(modal).not.toBeVisible();
+
+  return { email, password };
+}
+
 async function openCourse(page: Page, title: string) {
   await page.getByText(title).click();
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
@@ -89,9 +111,42 @@ async function createLesson(section: ReturnType<typeof sectionItem>, opts: { tit
   await expect(headingNamed(section.page(), title)).toBeVisible();
 }
 
+async function loginAsAdmin(page: Page) {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(ADMIN_EMAIL);
+  await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await expect(page).toHaveURL('/');
+}
+
 // --- Instructor Dashboard -------------------------------------------------------
 
 test.describe('Instructor Dashboard', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
+  test('allows an instructor to access the dashboard and create a course', async ({ page }) => {
+    const instructor = await createInstructorAccount(page);
+
+    await page.getByRole('button', { name: 'Sign Out' }).click();
+    await expect(page).toHaveURL('/login');
+    await page.getByLabel('Email').fill(instructor.email);
+    await page.getByLabel('Password').fill(instructor.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await expect(page).toHaveURL('/');
+
+    await page.goto('/instructor');
+    await expect(page.getByRole('heading', { name: 'Instructor Dashboard' })).toBeVisible();
+    await expect(page.locator('.instructor-status')).toHaveText('Instructor');
+    await expect(page.getByText('Admin Instructor', { exact: true })).toHaveCount(0);
+
+    await createCourse(page, {
+      title: testCourseTitle('instructor-course'),
+      description: 'Created by an instructor account.',
+    });
+  });
+
   test('renders the dashboard with toolbar and course list', async ({ page }) => {
     await gotoInstructorDashboard(page);
     await createCourse(page, { title: testCourseTitle() });

@@ -9,7 +9,9 @@ import {
   FileText,
   Link2,
   Lock,
+  Menu,
   Video,
+  X,
 } from 'lucide-react';
 import api from '../../services/api';
 import '../../styles/LessonPlayer.css';
@@ -63,6 +65,7 @@ export default function LessonPlayer() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const {
     data: courseData,
@@ -143,6 +146,9 @@ export default function LessonPlayer() {
   const handleSelectLesson = (lesson: StudentLesson) => {
     setActiveLessonId(lesson.id);
     setActiveResourceId(lesson.resources[0]?.id ?? null);
+    // Close the sidebar on small screens once a lesson is picked so the
+    // content is immediately visible.
+    setIsSidebarOpen(false);
   };
 
   const isLoading = isCourseLoading || areSectionsLoading;
@@ -150,22 +156,6 @@ export default function LessonPlayer() {
 
   return (
     <main className="lesson-player">
-      <header className="lesson-player__header">
-        <button type="button" className="lesson-player__back" onClick={() => navigate('/student/courses')}>
-          <ArrowLeft size={16} aria-hidden="true" /> Back to courses
-        </button>
-        {courseData?.course && (
-          <div className="lesson-player__course-info">
-            <h1>{courseData.course.title}</h1>
-            <p>
-              {courseData.course.category?.name ?? 'General'} · {courseData.course.instructor?.name ?? 'PEELP instructor'}
-            </p>
-          </div>
-        )}
-        {!isLoading && !hasAccess && (
-          <span className="lesson-player__access-badge">Preview mode — free lessons only</span>
-        )}
-      </header>
 
       {isError && (
         <p className="lesson-player__message lesson-player__message--error">
@@ -179,7 +169,41 @@ export default function LessonPlayer() {
         <p className="lesson-player__message">This course does not have any lessons yet.</p>
       ) : (
         <div className="lesson-player__body">
-          <nav className="lesson-player__sidebar" aria-label="Course curriculum">
+          <button
+            type="button"
+            className="lesson-player__sidebar-toggle"
+            onClick={() => setIsSidebarOpen((prev) => !prev)}
+            aria-expanded={isSidebarOpen}
+            aria-controls="lesson-player-sidebar"
+          >
+            <Menu size={18} aria-hidden="true" /> Course curriculum
+          </button>
+          <nav
+            id="lesson-player-sidebar"
+            className={`lesson-player__sidebar${isSidebarOpen ? ' is-open' : ''}`}
+            aria-label="Course curriculum"
+          >
+            <header className="lesson-player__header">
+              <button type="button" className="lesson-player__back" onClick={() => navigate('/student/courses')}>
+                <ArrowLeft size={16} aria-hidden="true" /> Back
+              </button>
+              {courseData?.course && (
+                <div className="lesson-player__course-info">
+                  <h1>{courseData.course.title}</h1>
+                </div>
+              )}
+              {!isLoading && !hasAccess && (
+                <span className="lesson-player__access-badge">Preview mode — free lessons only</span>
+              )}
+              <button
+                type="button"
+                className="lesson-player__sidebar-close"
+                onClick={() => setIsSidebarOpen(false)}
+                aria-label="Close course curriculum"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
             {sections.map((section) => {
               const isCollapsed = collapsedSections.has(section.id);
               return (
@@ -257,9 +281,11 @@ export default function LessonPlayer() {
                           </Link>
                         </div>
                       ) : activeResource.type === 'VIDEO' && activeResource.url ? (
-                        <video key={activeResource.id} className="lesson-player__video" src={activeResource.url} controls>
-                          Your browser does not support the video tag.
-                        </video>
+                        <div className="lesson-player__video-frame">
+                          <video key={activeResource.id} className="lesson-player__video" src={activeResource.url} controls>
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
                       ) : activeResource.type === 'PDF' && activeResource.url ? (
                         <iframe
                           key={activeResource.id}

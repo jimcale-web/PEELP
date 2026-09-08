@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import axios from 'axios';
 import '../styles/Register.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Please enter your full name.'),
@@ -16,6 +22,7 @@ const registerSchema = z.object({
     .regex(/^[+\d\s\-().]+$/, 'Your phone number can only contain digits, spaces, +, -, ( and ).'),
   city: z.string().min(1, 'Please enter your city.'),
   country: z.string().min(1, 'Please enter your country.'),
+  categoryId: z.string().min(1, 'Please select a category to enroll in.'),
   email: z.string().email('Please enter a valid email address.'),
   password: z.string().min(8, 'Your password must be at least 8 characters long.'),
   confirmPassword: z.string().min(1, 'Please confirm your password.'),
@@ -47,6 +54,13 @@ function resolveRegisterError(err: unknown): string {
 export default function Register() {
   const [serverError, setServerError] = useState('');
   const navigate = useNavigate();
+  const { data: categories = [], isLoading: isLoadingCategories, isError: isCategoriesError } = useQuery({
+    queryKey: ['registration', 'categories'],
+    queryFn: async (): Promise<Category[]> => {
+      const response = await axios.get<{ categories: Category[] }>(`${API_URL}/categories`);
+      return response.data.categories;
+    },
+  });
 
   const {
     register,
@@ -66,6 +80,7 @@ export default function Register() {
           phoneNumber: data.phoneNumber.trim(),
           city: data.city.trim(),
           country: data.country.trim(),
+          categoryId: data.categoryId,
           email: data.email.trim(),
           password: data.password,
         },
@@ -144,6 +159,27 @@ export default function Register() {
               />
               {errors.country && <span className="field-error">{errors.country.message}</span>}
             </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="reg-category">Category to enroll in</label>
+            <select
+              id="reg-category"
+              className={errors.categoryId ? 'input-error' : ''}
+              disabled={isSubmitting || isLoadingCategories}
+              {...register('categoryId')}
+            >
+              <option value="">
+                {isLoadingCategories ? 'Loading categories...' : 'Select a category'}
+              </option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+            {isCategoriesError && (
+              <span className="field-error">Unable to load categories. Please refresh and try again.</span>
+            )}
+            {errors.categoryId && <span className="field-error">{errors.categoryId.message}</span>}
           </div>
 
           {/* Row 3: Email (full width) */}

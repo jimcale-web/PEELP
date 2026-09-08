@@ -38,6 +38,8 @@ export interface StudentRow {
   city: string | null;
   country: string | null;
   phoneNumber: string | null;
+  enrolledCategoryId: string | null;
+  enrolledCategory: { id: string; name: string } | null;
   accessDuration: 'MONTHLY' | 'YEARLY' | null;
   accessExpiresAt: string | null;
   createdAt: string;

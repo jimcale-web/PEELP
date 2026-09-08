@@ -8,6 +8,7 @@ export const DELETE_USER_URL = USER_URL; // DELETE uses the same URL pattern
 export const CATEGORIES_URL = 'http://localhost:5000/api/admin/categories';
 export const CATEGORY_URL = (id: string) => `http://localhost:5000/api/admin/categories/${id}`;
 export const STUDENT_COURSES_URL = 'http://localhost:5000/api/student/courses';
+export const PUBLIC_CATEGORIES_URL = 'http://localhost:5000/api/categories';
 
 export const mockUsers = [
   {
@@ -16,6 +17,7 @@ export const mockUsers = [
     email: 'alice@example.com',
     role: 'ADMIN',
     emailVerified: true,
+    approvalStatus: 'APPROVED',
     createdAt: '2024-01-15T10:00:00.000Z',
     deletedAt: null,
   },
@@ -25,6 +27,7 @@ export const mockUsers = [
     email: 'bob@example.com',
     role: 'INSTRUCTOR',
     emailVerified: true,
+    approvalStatus: 'APPROVED',
     createdAt: '2024-02-20T10:00:00.000Z',
     deletedAt: null,
   },
@@ -34,6 +37,7 @@ export const mockUsers = [
     email: 'carol@example.com',
     role: 'STUDENT',
     emailVerified: false,
+    approvalStatus: 'APPROVED',
     createdAt: '2024-03-10T10:00:00.000Z',
     deletedAt: null,
   },
@@ -43,6 +47,7 @@ export const mockUsers = [
     email: 'dave@example.com',
     role: 'STUDENT',
     emailVerified: true,
+    approvalStatus: 'REJECTED',
     createdAt: '2024-04-01T10:00:00.000Z',
     deletedAt: '2024-05-01T10:00:00.000Z',
   },
@@ -97,6 +102,7 @@ export const mockStudentCourses = [
 export const handlers = [
   http.get(USERS_URL, () => HttpResponse.json({ users: mockUsers })),
   http.get(CATEGORIES_URL, () => HttpResponse.json({ categories: mockCategories })),
+  http.get(PUBLIC_CATEGORIES_URL, () => HttpResponse.json({ categories: mockCategories })),
   http.get(STUDENT_COURSES_URL, () => HttpResponse.json({ courses: mockStudentCourses })),
 ];
 

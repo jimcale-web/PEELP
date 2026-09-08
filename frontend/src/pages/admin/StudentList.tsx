@@ -75,7 +75,7 @@ export default function StudentList() {
     }
   }
 
-  const skeletonCols = 8;
+  const skeletonCols = 9;
 
   return (
     <div className="student-list-container">
@@ -134,6 +134,7 @@ export default function StudentList() {
                   <th>Phone</th>
                   <th>Verified</th>
                   <th>Joined</th>
+                  <th>Category</th>
                   <th>Approval</th>
                   <th>Accessibility Duration</th>
                 </tr>

@@ -39,9 +39,17 @@ interface Course {
   id: string;
   title: string;
   description?: string | null;
+  thumbnailUrl?: string | null;
   categoryId?: string | null;
   category?: { id: string; name: string } | null;
   createdAt: string;
+}
+
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
+
+function resolveThumbnailUrl(thumbnailUrl?: string | null): string | null {
+  if (!thumbnailUrl) return null;
+  return thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_ORIGIN}${thumbnailUrl}`;
 }
 
 async function fetchCourse(courseId: string): Promise<Course> {
@@ -77,6 +85,8 @@ export default function CourseDetail() {
   const [showResourceForms, setShowResourceForms] = useState<Record<string, boolean>>({});
   const [resourceDrafts, setResourceDrafts] = useState<Record<string, { type: string; url: string; isFree: boolean }>>({});
   const [resourceErrors, setResourceErrors] = useState<Record<string, string>>({});
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailError, setThumbnailError] = useState('');
 
   const { data: course, isLoading: courseLoading, isError: courseError } = useQuery({
     queryKey: ['instructor', 'course', courseId],
@@ -283,6 +293,67 @@ export default function CourseDetail() {
     setEditDescription(section.description || '');
   };
 
+  const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !course) {
+      return;
+    }
+
+    setThumbnailError('');
+    try {
+      setThumbnailUploading(true);
+      const formData = new FormData();
+      formData.append('title', course.title);
+      formData.append('description', course.description || '');
+      if (course.categoryId) {
+        formData.append('categoryId', course.categoryId);
+      }
+      formData.append('thumbnail', file);
+      await api.patch(`/instructor/courses/${courseId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await queryClient.invalidateQueries({ queryKey: ['instructor', 'course', courseId] });
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setThumbnailError(err.response?.data?.error ?? 'Unable to upload thumbnail.');
+        return;
+      }
+      if (err instanceof Error) {
+        setThumbnailError(err.message);
+        return;
+      }
+      setThumbnailError('Unable to upload thumbnail.');
+    } finally {
+      setThumbnailUploading(false);
+    }
+  };
+
+  const handleThumbnailDelete = async () => {
+    if (!confirm('Are you sure you want to remove this thumbnail image?')) {
+      return;
+    }
+
+    setThumbnailError('');
+    try {
+      setThumbnailUploading(true);
+      await api.delete(`/instructor/courses/${courseId}/thumbnail`);
+      await queryClient.invalidateQueries({ queryKey: ['instructor', 'course', courseId] });
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setThumbnailError(err.response?.data?.error ?? 'Unable to remove thumbnail.');
+        return;
+      }
+      if (err instanceof Error) {
+        setThumbnailError(err.message);
+        return;
+      }
+      setThumbnailError('Unable to remove thumbnail.');
+    } finally {
+      setThumbnailUploading(false);
+    }
+  };
+
   const handleUpdateSection = async (sectionId: string) => {
     setError('');
 
@@ -335,6 +406,40 @@ export default function CourseDetail() {
           >
             ← Back to Courses
           </button>
+          <div className="course-detail-thumbnail-section">
+            {resolveThumbnailUrl(course?.thumbnailUrl) ? (
+              <img
+                className="course-detail-thumbnail"
+                src={resolveThumbnailUrl(course?.thumbnailUrl)!}
+                alt={`${course?.title} thumbnail`}
+              />
+            ) : (
+              <div className="course-detail-thumbnail-placeholder">No thumbnail</div>
+            )}
+            <div className="course-detail-thumbnail-actions">
+              <label className="course-detail-thumbnail-upload-btn">
+                {course?.thumbnailUrl ? 'Change Image' : 'Upload Image'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailUpload}
+                  disabled={thumbnailUploading}
+                  hidden
+                />
+              </label>
+              {course?.thumbnailUrl && (
+                <button
+                  type="button"
+                  className="course-detail-thumbnail-delete-btn"
+                  onClick={handleThumbnailDelete}
+                  disabled={thumbnailUploading}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {thumbnailError && <div className="instructor-error">{thumbnailError}</div>}
+          </div>
           <div>
             <h1>{course?.title}</h1>
             <p className="course-detail-description">{course?.description || 'No description provided.'}</p>

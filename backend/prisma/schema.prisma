@@ -34,6 +34,8 @@ model User {
   city             String?
   phoneNumber      String?
   country          String?
+  enrolledCategoryId String?
+  enrolledCategory Category? @relation("StudentEnrollmentCategory", fields: [enrolledCategoryId], references: [id], onDelete: SetNull)
   accessDuration   AccessDuration?
   accessExpiresAt  DateTime?
   deletedAt        DateTime?
@@ -94,6 +96,7 @@ model Course {
   id           String    @id
   title        String
   description  String?
+  thumbnailUrl String?
   instructorId String?
   instructor   User?     @relation(fields: [instructorId], references: [id], onDelete: SetNull)
   categoryId   String?
@@ -159,6 +162,7 @@ model Category {
   updatedAt   DateTime
   deletedAt   DateTime?
   courses     Course[]
+  enrolledStudents User[] @relation("StudentEnrollmentCategory")
 
   @@map("category")
 }

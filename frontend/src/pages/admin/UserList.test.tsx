@@ -21,9 +21,9 @@ describe('UserList', () => {
   describe('loading state', () => {
     it('renders skeleton rows while fetching', () => {
       renderUserList();
-      // 8 skeleton rows × 6 cells each
+      // 8 skeleton rows × 7 skeleton cells each
       const skeletons = document.querySelectorAll('.skeleton');
-      expect(skeletons.length).toBe(8 * 6);
+      expect(skeletons.length).toBe(8 * 7);
     });
 
     it('hides the filters while loading', () => {
@@ -126,7 +126,7 @@ describe('UserList', () => {
 
     it('filters to only admins', async () => {
       const user = userEvent.setup();
-      await user.selectOptions(screen.getByRole('combobox'), 'ADMIN');
+      await user.selectOptions(screen.getByLabelText(/filter by role/i), 'ADMIN');
 
       expect(screen.getByText('Alice Admin')).toBeInTheDocument();
       expect(screen.queryByText('Bob Instructor')).not.toBeInTheDocument();
@@ -135,7 +135,7 @@ describe('UserList', () => {
 
     it('filters to only instructors', async () => {
       const user = userEvent.setup();
-      await user.selectOptions(screen.getByRole('combobox'), 'INSTRUCTOR');
+      await user.selectOptions(screen.getByLabelText(/filter by role/i), 'INSTRUCTOR');
 
       expect(screen.getByText('Bob Instructor')).toBeInTheDocument();
       expect(screen.queryByText('Alice Admin')).not.toBeInTheDocument();
@@ -143,7 +143,7 @@ describe('UserList', () => {
 
     it('filters to only students', async () => {
       const user = userEvent.setup();
-      await user.selectOptions(screen.getByRole('combobox'), 'STUDENT');
+      await user.selectOptions(screen.getByLabelText(/filter by role/i), 'STUDENT');
 
       expect(screen.getByText('Carol Student')).toBeInTheDocument();
       expect(screen.getByText('Dave Deleted')).toBeInTheDocument();
@@ -152,8 +152,8 @@ describe('UserList', () => {
 
     it('shows all users when reset to All Roles', async () => {
       const user = userEvent.setup();
-      await user.selectOptions(screen.getByRole('combobox'), 'ADMIN');
-      await user.selectOptions(screen.getByRole('combobox'), '');
+      await user.selectOptions(screen.getByLabelText(/filter by role/i), 'ADMIN');
+      await user.selectOptions(screen.getByLabelText(/filter by role/i), '');
 
       expect(screen.getAllByRole('row')).toHaveLength(mockUsers.length + 1); // +1 for thead
     });
@@ -165,7 +165,7 @@ describe('UserList', () => {
       await screen.findByText('Alice Admin');
 
       const user = userEvent.setup();
-      await user.selectOptions(screen.getByRole('combobox'), 'STUDENT');
+      await user.selectOptions(screen.getByLabelText(/filter by role/i), 'STUDENT');
       await user.type(screen.getByPlaceholderText(/search/i), 'carol');
 
       expect(screen.getByText('Carol Student')).toBeInTheDocument();

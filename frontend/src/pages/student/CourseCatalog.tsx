@@ -14,7 +14,7 @@ interface StudentCourse {
 }
 
 async function fetchStudentCourses(): Promise<StudentCourse[]> {
-  const response = await api.get<{ courses: StudentCourse[] }>('/student/courses');
+  const response = await api.get<{ courses: StudentCourse[] }>('/public/courses');
   return response.data.courses;
 }
 

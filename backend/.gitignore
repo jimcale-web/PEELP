@@ -30,5 +30,8 @@ yarn-debug.log*
 # Prisma
 .prisma/
 
+# Uploads
+uploads/
+
 # OS
 Thumbs.db
