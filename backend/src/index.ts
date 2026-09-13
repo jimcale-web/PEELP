@@ -2069,6 +2069,16 @@ app.delete('/api/admin/categories/:id', requireAuth, requireAdmin, asyncHandler(
   res.status(200).json({ deleted: true, name: existing.name });
 }));
 
+// Serve the built frontend as static files from the React build directory
+const frontendPath = path.join(import.meta.dirname, '../../frontend/dist');
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath, { index: false }));
+  // SPA fallback: serve index.html for any unmatched routes (except API routes)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
