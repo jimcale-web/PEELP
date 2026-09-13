@@ -102,9 +102,10 @@ Backend currently exposes:
 Deploy the repository as two Railway services:
 
 1. Create a PostgreSQL database in the Railway project.
-2. Create a backend service from this repository. Prefer setting its root directory
-   to `backend`; if the service uses the repository root, use the root build command
-   `npm run build:railway:backend`.
+2. Create a backend service from this repository. If the service uses the repository
+   root, the root [railway.toml](/C:/Users/hp/PEELP/railway.toml) configures the
+   backend build and start commands. Alternatively, set the service root directory
+   to `backend` to use [backend/railway.toml](/C:/Users/hp/PEELP/backend/railway.toml).
 3. Add these backend variables:
    - `DATABASE_URL` - reference the Railway PostgreSQL service
    - `BETTER_AUTH_SECRET` - a strong, persistent secret
