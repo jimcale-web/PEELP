@@ -20,6 +20,8 @@ import fs from 'fs';
 
 
 const app = express();
+// Railway terminates TLS and forwards the original client IP to the service.
+app.set('trust proxy', 1);
 const PORT = Number(process.env.PORT) || 5000;
 const defaultOrigins = [
   'http://localhost:5173',

@@ -96,3 +96,25 @@ Backend currently exposes:
 
 - Existing docs in [docs/](/C:/Users/hp/PEELP/docs) describe broader planned architecture and phases.
 - Use them as roadmap material; implementation is currently much smaller than the full target scope.
+
+## Deploying to Railway
+
+Deploy the repository as two Railway services:
+
+1. Create a PostgreSQL database in the Railway project.
+2. Create a backend service from this repository and set its root directory to `backend`.
+   Railway will use the native Nixpacks Node.js build.
+3. Add these backend variables:
+   - `DATABASE_URL` - reference the Railway PostgreSQL service
+   - `BETTER_AUTH_SECRET` - a strong, persistent secret
+   - `BETTER_AUTH_URL` - the public backend URL, such as `https://api.example.com`
+   - `FRONTEND_URL` - the public frontend URL, such as `https://app.example.com`
+   - `NODE_ENV=production`
+4. Deploy a second service from the same repository with root directory `frontend`.
+5. Add `VITE_API_URL` to the frontend service using the backend API URL, including `/api`
+   (for example, `https://api.example.com/api`). This is a build-time variable, so redeploy
+   the frontend after changing it.
+
+The backend service applies committed Prisma migrations before starting and exposes
+`/api/health` for Railway health checks. The frontend service runs the Vite production
+preview server.

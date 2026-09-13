@@ -66,3 +66,11 @@ Additional variables in template are for planned integrations.
 
 Prisma is configured for PostgreSQL in [schema.prisma](/C:/Users/hp/PEELP/backend/prisma/schema.prisma), with a shared client in [prisma.ts](/C:/Users/hp/PEELP/backend/src/lib/prisma.ts).  
 On backend startup, [startServer](/C:/Users/hp/PEELP/backend/src/index.ts:36) verifies DB connectivity before serving traffic.
+
+## Railway
+
+Set the Railway service root directory to `backend`. The included
+Railway configuration uses the native Nixpacks Node.js builder, runs
+`prisma migrate deploy` before starting the API, and should provide `PORT` and
+`DATABASE_URL`; also configure `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and
+`FRONTEND_URL` for production.

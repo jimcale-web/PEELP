@@ -51,3 +51,10 @@ Main variable used:
 
 - The README in [docs/project-scope.md](/C:/Users/hp/PEELP/docs/project-scope.md) describes the planned larger feature set.
 - Current frontend code is an initial scaffold and does not yet implement that full scope.
+
+## Railway
+
+Set the Railway service root directory to `frontend` and configure
+`VITE_API_URL` to the deployed backend API URL ending in `/api`. The included
+Railway configuration uses the native Nixpacks Node.js builder and starts the Vite
+production preview server.
