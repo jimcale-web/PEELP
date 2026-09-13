@@ -7,6 +7,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth.js';
 import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { requireAuth } from './middleware/require-auth.js';
+import { optionalAuth } from './middleware/optional-auth.js';
 import { requireAdmin } from './middleware/require-admin.js';
 import { requireInstructor } from './middleware/require-instructor.js';
 import { requireStudent } from './middleware/require-student.js';
@@ -657,7 +658,7 @@ app.get('/api/student/courses', requireAuth, requireStudent, asyncHandler(async 
 }));
 
 // Student: get a single course's details for the lesson player header.
-app.get('/api/student/courses/:courseId', requireAuth, requireStudent, asyncHandler(async (req, res) => {
+app.get('/api/student/courses/:courseId', optionalAuth, asyncHandler(async (req, res) => {
   const { courseId } = req.params;
 
   const course = await prisma.course.findFirst({
@@ -677,10 +678,12 @@ app.get('/api/student/courses/:courseId', requireAuth, requireStudent, asyncHand
     return;
   }
 
-  const student = await prisma.user.findUnique({
-    where: { id: req.user!.id },
-    select: { accessExpiresAt: true, enrolledCategoryId: true },
-  });
+  const student = req.user
+    ? await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { accessExpiresAt: true, enrolledCategoryId: true },
+      })
+    : null;
 
   res.json({
     course,
@@ -693,7 +696,7 @@ app.get('/api/student/courses/:courseId', requireAuth, requireStudent, asyncHand
 
 // Student: get the full course curriculum (sections → lessons → resources) for the lesson player.
 // Resources are locked unless the student has an active subscription for the course's category, except free-preview videos.
-app.get('/api/student/courses/:courseId/sections', requireAuth, requireStudent, asyncHandler(async (req, res) => {
+app.get('/api/student/courses/:courseId/sections', optionalAuth, asyncHandler(async (req, res) => {
   const { courseId } = req.params;
 
   const course = await prisma.course.findFirst({
@@ -706,10 +709,12 @@ app.get('/api/student/courses/:courseId/sections', requireAuth, requireStudent, 
     return;
   }
 
-  const student = await prisma.user.findUnique({
-    where: { id: req.user!.id },
-    select: { accessExpiresAt: true, enrolledCategoryId: true },
-  });
+  const student = req.user
+    ? await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { accessExpiresAt: true, enrolledCategoryId: true },
+      })
+    : null;
   const hasAccess = hasActiveAccessForCategory(
     { accessExpiresAt: student?.accessExpiresAt ?? null, enrolledCategoryId: student?.enrolledCategoryId ?? null },
     course.categoryId,

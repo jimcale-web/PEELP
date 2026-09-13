@@ -1,17 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/Navbar.css';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  if (location.pathname === '/login') {
-    return null;
-  }
 
   const handleLogout = async () => {
     try {
@@ -36,7 +31,7 @@ export default function Navbar() {
 
         {/* Desktop menu */}
         <div className="navbar-menu">
-          <a href="/" className="nav-link">Home</a>
+          <Link to="/" className="nav-link">Home</Link>
           {isAuthenticated && user?.role === 'ADMIN' && (
             <Link to="/admin/users" className="nav-link">Admin</Link>
           )}
@@ -88,7 +83,7 @@ export default function Navbar() {
       {/* Mobile drawer */}
       {menuOpen && (
         <div className="navbar-mobile-drawer" onClick={() => setMenuOpen(false)}>
-          <a href="/" className="nav-link-mobile">Home</a>
+          <Link to="/" className="nav-link-mobile">Home</Link>
           {isAuthenticated && user?.role === 'ADMIN' && (
             <Link to="/admin/users" className="nav-link-mobile">Admin</Link>
           )}

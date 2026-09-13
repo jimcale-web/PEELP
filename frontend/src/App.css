@@ -5,7 +5,9 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
 }
@@ -34,7 +36,42 @@ button {
   font-family: inherit;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
 }
 
+/* Hero */ .hero {
+  clip-path: polygon(0% 0%, 100% 0%, 100% 90%, 0% 100%);
+}
+
+.hero__tagline {
+  font-size: 2rem;
+  color: #303336;
+  letter-spacing: 1px;
+}
+
+.hero__image {
+  width: 100%;
+}
+
+@media screen and (min-width: 768px) {
+  .hero {
+    padding-left: 1px;
+  }
+
+  .hero__tagline,
+  .hero__heading {
+    margin-left: 5rem;
+  }
+
+  .hero__btn {
+    margin-left: 10rem;
+  }
+
+  .hero__content {
+    text-align: left;
+
+  }
+}

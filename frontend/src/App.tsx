@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
-import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import InstructorRoute from './components/InstructorRoute';
 import AdminLayout from './components/Admin/AdminLayout';
@@ -32,14 +31,9 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<Home />} />
+          <Route path="/courses" element={<CourseCatalog />} />
+          <Route path="/course/:courseId" element={<LessonPlayer />} />
           <Route
             path="/instructor"
             element={
@@ -57,14 +51,7 @@ function App() {
             }
           />
           <Route path="/student/courses" element={<CourseCatalog />} />
-          <Route
-            path="/student/course/:courseId"
-            element={
-              <ProtectedRoute>
-                <LessonPlayer />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/student/course/:courseId" element={<LessonPlayer />} />
           <Route
             path="/admin/users"
             element={
