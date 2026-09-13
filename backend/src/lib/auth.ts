@@ -13,10 +13,13 @@ const configuredOrigins = (process.env.FRONTEND_URL || '')
     .map((origin) => origin.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 const allowedOrigins = [...new Set([...defaultOrigins, ...configuredOrigins])];
+const configuredBaseURL = (process.env.BETTER_AUTH_URL || 'http://localhost:5000')
+    .trim()
+    .replace(/^(['"])(.*)\1$/, '$2');
 
 export const auth = betterAuth({
     basePath: '/api/auth',
-    baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:5000',
+    baseURL: configuredBaseURL,
     trustedOrigins: allowedOrigins,
     database: prismaAdapter(prisma, {
         provider: 'postgresql',
