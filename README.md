@@ -63,7 +63,9 @@ npm run dev:frontend
 Defined in [package.json](/C:/Users/hp/PEELP/package.json):
 
 - `npm run dev` - runs backend and frontend concurrently
-- `npm run build` - builds backend then frontend
+- `npm run build` - builds the backend for deployment
+- `npm run build:all` - builds both backend and frontend
+- `npm run build:backend` - builds the backend without reinstalling dependencies
 - `npm run lint` - lints backend then frontend
 - `npm run format` - formats backend then frontend
 
