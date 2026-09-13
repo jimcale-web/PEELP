@@ -4,6 +4,9 @@
   "description": "PEELP - Online Learning Management System (LMS)",
   "private": true,
   "packageManager": "npm@10.9.3",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "dev:backend": "cd backend && npm run dev",

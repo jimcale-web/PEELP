@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "PEELP LMS Backend - Node.js + Express + TypeScript",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx src/index.ts",
