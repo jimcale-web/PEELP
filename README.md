@@ -102,8 +102,9 @@ Backend currently exposes:
 Deploy the repository as two Railway services:
 
 1. Create a PostgreSQL database in the Railway project.
-2. Create a backend service from this repository and set its root directory to `backend`.
-   Railway will use the native Nixpacks Node.js build.
+2. Create a backend service from this repository. Prefer setting its root directory
+   to `backend`; if the service uses the repository root, use the root build command
+   `npm run build:railway:backend`.
 3. Add these backend variables:
    - `DATABASE_URL` - reference the Railway PostgreSQL service
    - `BETTER_AUTH_SECRET` - a strong, persistent secret
