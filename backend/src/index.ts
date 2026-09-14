@@ -17,6 +17,9 @@ import { prisma } from './lib/prisma.js';
 import { uploadThumbnail, uploadsDir } from './middleware/upload.js';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
 const app = express();
@@ -2069,13 +2072,13 @@ app.delete('/api/admin/categories/:id', requireAuth, requireAdmin, asyncHandler(
   res.status(200).json({ deleted: true, name: existing.name });
 }));
 
-// Serve the built frontend as static files from the React build directory
-const frontendPath = path.join(import.meta.dirname, '../../frontend/dist');
-if (fs.existsSync(frontendPath)) {
-  app.use(express.static(frontendPath, { index: false }));
-  // SPA fallback: serve index.html for any unmatched routes (except API routes)
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+// Serve the built frontend (single-service Railway deployment).
+const frontendDistDir = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDistDir)) {
+  app.use(express.static(frontendDistDir));
+  // Client-side routing: any non-API GET falls back to index.html.
+  app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => {
+    res.sendFile(path.join(frontendDistDir, 'index.html'));
   });
 }
 
