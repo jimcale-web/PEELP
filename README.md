@@ -110,13 +110,13 @@ Deploy the repository as two Railway services:
 3. Add these backend variables:
    - `DATABASE_URL` - reference the Railway PostgreSQL service
    - `BETTER_AUTH_SECRET` - a strong, persistent secret
-   - `BETTER_AUTH_URL=https://peelp-production-9c07.up.railway.app`
+   - `BETTER_AUTH_URL=https://peelp-production.up.railway.app`
    - `FRONTEND_URL=https://peaceful-emotion-production-d146.up.railway.app`
    - `NODE_ENV=production`
 4. Deploy a second service from the same repository with root directory `frontend`.
 5. `frontend/.env.production` configures `VITE_API_URL` for the deployed backend. If Railway
    variables override committed environment files, set `VITE_API_URL` to
-   `https://peelp-production-9c07.up.railway.app/api` and redeploy the frontend after changing it.
+   `https://peelp-production.up.railway.app/api` and redeploy the frontend after changing it.
 
 The backend service applies committed Prisma migrations before starting and exposes
 `/api/health` for Railway health checks. The frontend service runs the Vite production
