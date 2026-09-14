@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
-import api from '../../services/api';
+import api, { API_ORIGIN } from '../../services/api';
 import '../../styles/InstructorDashboard.css';
 
 interface Category {
@@ -19,8 +19,6 @@ interface CourseRow {
   category?: { id: string; name: string } | null;
   createdAt: string;
 }
-
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
 
 function resolveThumbnailUrl(thumbnailUrl?: string | null): string | null {
   if (!thumbnailUrl) return null;

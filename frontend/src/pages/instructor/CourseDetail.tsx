@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import api from '../../services/api';
+import api, { API_ORIGIN } from '../../services/api';
 import '../../styles/CourseDetail.css';
 
 interface Resource {
@@ -44,8 +44,6 @@ interface Course {
   category?: { id: string; name: string } | null;
   createdAt: string;
 }
-
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
 
 function resolveThumbnailUrl(thumbnailUrl?: string | null): string | null {
   if (!thumbnailUrl) return null;
