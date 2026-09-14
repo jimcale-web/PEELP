@@ -25,6 +25,14 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: 'postgresql',
     }),
+    advanced: {
+        // Railway (and most proxies/load balancers) forward the original client IP
+        // via X-Forwarded-For. Without this, Better Auth's rate limiter can't
+        // distinguish clients and falls back to a single shared bucket.
+        ipAddress: {
+            ipAddressHeaders: ['x-forwarded-for'],
+        },
+    },
     rateLimit: {
         // Disable in test mode — tests make many get-session calls and a separate
         // express-rate-limit already guards sign-in in production.
