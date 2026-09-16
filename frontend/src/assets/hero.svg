@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Students learning together</title>
+  <desc id="desc">Abstract illustration of students learning online</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f4c5c"/>
+      <stop offset="1" stop-color="#2f7f93"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#background)"/>
+  <circle cx="980" cy="160" r="90" fill="#f6bd60" opacity=".9"/>
+  <circle cx="190" cy="630" r="130" fill="#84a59d" opacity=".55"/>
+  <rect x="220" y="190" width="760" height="420" rx="30" fill="#fff" opacity=".96"/>
+  <rect x="280" y="250" width="430" height="260" rx="16" fill="#dceef2"/>
+  <rect x="320" y="295" width="250" height="24" rx="12" fill="#2f7f93"/>
+  <rect x="320" y="345" width="320" height="18" rx="9" fill="#84a59d"/>
+  <rect x="320" y="385" width="280" height="18" rx="9" fill="#84a59d"/>
+  <circle cx="810" cy="350" r="76" fill="#f6bd60"/>
+  <path d="M710 540c22-94 178-94 200 0" fill="#0f4c5c"/>
+  <text x="600" y="700" fill="#fff" font-family="Arial, sans-serif" font-size="42" font-weight="700" text-anchor="middle">Learn beyond boundaries</text>
+</svg>

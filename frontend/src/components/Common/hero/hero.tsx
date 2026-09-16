@@ -1,58 +1,55 @@
-import { GiSchoolBag } from "react-icons/gi";
-import './hero.css'
-import "../button/button.css"
-import image from '../../assets/hero.jpg'
-import { MdWork } from "react-icons/md";
-import Boxs from "../boxs/box";
-import { FaGraduationCap } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaArrowRight, FaBookOpen, FaGraduationCap, FaUserTie } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import heroImage from '../../../assets/hero.svg';
+import './hero.css';
 
 
-
-
-const hero = () => {
-  const boxData = [
-    { icon: <MdWork />, heading: 'Professionals', body: 'Advance your career.' },
-  { icon: <GiSchoolBag />, heading: 'Students', body: 'Achieve your academic goals.' },
-  { icon: <FaGraduationCap />, heading: 'Teachers', body: 'Enhance your teaching skills.' },
-];
-
-
+export default function Hero() {
   return (
-    <div className=" block block--linear block--skewed--left hero">
-    <div className="container grid grid--1x2 hero__grid">
-      <header className="block__header hero__content">
-        <h1 className="block__heading">Peace institute eLearning Platform</h1>
-        <p className="hero__tagline">
-          learn beyond boundaries .
-        </p>
-        <Link to="/register" className="btn btn--primary btn--stretched hero__cta">
-          Get Started
-        </Link>
-      </header>
+    <section className="hero" aria-labelledby="hero-heading">
+      <div className="hero__glow hero__glow--top" aria-hidden="true" />
+      <div className="hero__glow hero__glow--bottom" aria-hidden="true" />
 
-      <div className="hero__media">
-        <picture className="hero__picture">
-          <img className="hero__image" src={image} alt="Students learning at Peace Institute"/>
-        </picture>
+      <div className="hero__container">
+        <div className="hero__grid">
+          <div className="hero__content">
+            <h1 id="hero-heading" className="hero__heading">
+              Learn without limits. <span>Grow with purpose.</span>
+            </h1>
+            <p className="hero__description">
+              Flexible, expert-led learning that helps you build skills, meet your goals, and make an impact.
+            </p>
 
-        {/* Beginnig of Boxs */}
+            <div className="hero__actions">
+              <Link to="/register" className="hero__button hero__button--primary">
+                Start learning <FaArrowRight aria-hidden="true" />
+              </Link>
+              <Link to="/student/courses" className="hero__button hero__button--secondary">
+                Explore courses
+              </Link>
+            </div>
+          </div>
 
-        <div className="boxs hero__boxes">
-          {boxData.map((x) => (
-          <Boxs key={x.heading}>
-            <span className="icon-containertwo icon--small">{x.icon}</span>
-            <h4 className="box__heading">{x.heading}</h4>
-          <p className="box__body">{x.body}</p>
-          </Boxs>
-        ))}
+          <div className="hero__visual">
+            <div className="hero__image-frame">
+              <img
+                className="hero__image"
+                src={heroImage}
+                alt="Illustration of students learning online"
+              />
+            </div>
+            <div className="hero__achievement">
+              <span className="hero__achievement-icon" aria-hidden="true">
+                <FaGraduationCap />
+              </span>
+              <span>
+                <strong>Learn your way</strong>
+                <small>Anywhere, anytime</small>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
-      </div>
-
-         {/* End of Boxes */}
-    </div>
-  </div>
-  )
+    </section>
+  );
 }
-
-export default hero

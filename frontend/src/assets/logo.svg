@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
+  <title id="title">Peace Institute logo</title>
+  <circle cx="80" cy="80" r="76" fill="#0f4c5c"/>
+  <path d="M36 54h88v55c-14 12-29 18-44 18s-30-6-44-18z" fill="#f6bd60"/>
+  <path d="M80 54v73M43 65l37 15 37-15" fill="none" stroke="#0f4c5c" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+  <text x="80" y="104" fill="#0f4c5c" font-family="Arial, sans-serif" font-size="27" font-weight="700" text-anchor="middle">PI</text>
+</svg>

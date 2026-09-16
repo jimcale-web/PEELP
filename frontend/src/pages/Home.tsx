@@ -1,27 +1,9 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import '../styles/Home.css';
-
+import Hero from '../components/Common/hero/hero';
 export default function Home() {
-  const { user } = useAuth();
-
   return (
     <div className="home-container">
-      <div className="welcome-card">
-        <h1>Welcome to PEELP</h1>
-        <p>Online Learning Management System</p>
-
-        {user ? (
-          <div className="user-info">
-            <p>Hello, <strong>{user.name}</strong>!</p>
-            <p>Role: <span className="role-badge">{user.role}</span></p>
-          </div>
-        ) : (
-          <div className="user-info">
-            <p><Link to="/student/courses">Browse our courses</Link> or <Link to="/login">sign in</Link> to get started.</p>
-          </div>
-        )}
-      </div>
+      <Hero />
     </div>
   );
 }
