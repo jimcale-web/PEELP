@@ -107,7 +107,7 @@ export default function Register() {
                 id="reg-name"
                 type="text"
                 className={errors.name ? 'input-error' : ''}
-                placeholder="Jane Doe"
+                placeholder="Omer"
                 disabled={isSubmitting}
                 autoComplete="name"
                 {...register('name')}
@@ -121,7 +121,7 @@ export default function Register() {
                 id="reg-phone"
                 type="tel"
                 className={errors.phoneNumber ? 'input-error' : ''}
-                placeholder="+254 700 000 000"
+                placeholder="+251 900 000 000"
                 disabled={isSubmitting}
                 autoComplete="tel"
                 {...register('phoneNumber')}
@@ -138,7 +138,7 @@ export default function Register() {
                 id="reg-city"
                 type="text"
                 className={errors.city ? 'input-error' : ''}
-                placeholder="Nairobi"
+                placeholder="jijiga"
                 disabled={isSubmitting}
                 autoComplete="address-level2"
                 {...register('city')}
@@ -152,7 +152,7 @@ export default function Register() {
                 id="reg-country"
                 type="text"
                 className={errors.country ? 'input-error' : ''}
-                placeholder="Kenya"
+                placeholder="Ethiopia"
                 disabled={isSubmitting}
                 autoComplete="country-name"
                 {...register('country')}
@@ -189,7 +189,7 @@ export default function Register() {
               id="reg-email"
               type="email"
               className={errors.email ? 'input-error' : ''}
-              placeholder="jane@example.com"
+              placeholder="You@example.com"
               disabled={isSubmitting}
               autoComplete="email"
               {...register('email')}
