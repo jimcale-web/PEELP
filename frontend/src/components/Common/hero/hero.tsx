@@ -1,4 +1,4 @@
-import { FaArrowRight, FaBookOpen, FaGraduationCap, FaUserTie } from 'react-icons/fa';
+import { FaArrowRight, FaGraduationCap, } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import heroImage from '../../../assets/hero.svg';
 import './hero.css';
