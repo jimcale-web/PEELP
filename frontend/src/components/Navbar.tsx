@@ -41,6 +41,9 @@ export default function Navbar() {
           {(!isAuthenticated || user?.role === 'STUDENT') && (
             <Link to="/student/courses" className="nav-link">Courses</Link>
           )}
+          {
+            <Link to="/about" className="nav-link">About</Link>
+          }
           {isAuthenticated && user?.role === 'STUDENT' && (
             <button type="button" onClick={goToCoursePlayer} className="nav-link nav-link-button">
               Course Player
@@ -93,6 +96,7 @@ export default function Navbar() {
           {(!isAuthenticated || user?.role === 'STUDENT') && (
             <Link to="/student/courses" className="nav-link-mobile">Courses</Link>
           )}
+          <Link to="/about" className="nav-link-mobile">About</Link>
           {isAuthenticated && user?.role === 'STUDENT' && (
             <button type="button" onClick={goToCoursePlayer} className="nav-link-mobile nav-link-mobile-button">
               Course Player

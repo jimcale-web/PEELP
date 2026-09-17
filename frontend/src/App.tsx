@@ -8,6 +8,7 @@ import AdminLayout from './components/Admin/AdminLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
+import AboutPage from './pages/about';
 import UserList from './pages/admin/UserList';
 import StudentList from './pages/admin/StudentList';
 import PendingApproval from './pages/PendingApproval';
@@ -32,6 +33,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/courses" element={<CourseCatalog />} />
           <Route path="/course/:courseId" element={<LessonPlayer />} />
           <Route
