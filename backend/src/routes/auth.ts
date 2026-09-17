@@ -18,7 +18,7 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters.'),
   city: z.string().min(1, 'City is required.'),
   country: z.string().min(1, 'Country is required.'),
-  categoryId: z.string().min(1, 'Please select a category to enroll in.'),
+  categoryId: z.string().min(1, 'Please select a category to enroll in.').optional(),
   phoneNumber: z
     .string()
     .min(7, 'Phone number must be at least 7 characters.')
@@ -41,13 +41,17 @@ authRouter.post('/api/register', asyncHandler(async (req, res) => {
     return;
   }
 
-  const category = await prisma.category.findFirst({
-    where: { id: categoryId, deletedAt: null },
-    select: { id: true },
-  });
-  if (!category) {
-    res.status(400).json({ error: 'The selected enrollment category is no longer available.' });
-    return;
+  let enrolledCategoryId: string | undefined;
+  if (categoryId) {
+    const category = await prisma.category.findFirst({
+      where: { id: categoryId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!category) {
+      res.status(400).json({ error: 'The selected enrollment category is no longer available.' });
+      return;
+    }
+    enrolledCategoryId = category.id;
   }
 
   const hashedPassword = await hashPassword(password);
@@ -66,7 +70,7 @@ authRouter.post('/api/register', asyncHandler(async (req, res) => {
       city,
       country,
       phoneNumber,
-      enrolledCategoryId: category.id,
+      enrolledCategoryId,
       createdAt: now,
       updatedAt: now,
       accounts: {
