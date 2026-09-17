@@ -61,7 +61,10 @@ const AboutPage = () => {
         <main>
             {/* ── Hero ── */}
             <section className="about-hero">
-                <div className="about-hero__bg" />
+                <div
+                    className="about-hero__bg"
+                    style={{ backgroundImage: `url(${aboutImg})` }}
+                />
                 <div className="about-hero__overlay" />
                 <div className="about-hero__content">
                     <span className="about-hero__badge">Peace Institute</span>

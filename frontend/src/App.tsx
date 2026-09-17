@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import AdminRoute from './components/AdminRoute';
 import InstructorRoute from './components/InstructorRoute';
-import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/Admin/AdminLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -33,14 +32,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<Home />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/courses" element={<CourseCatalog />} />
           <Route path="/course/:courseId" element={<LessonPlayer />} />
