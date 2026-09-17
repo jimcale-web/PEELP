@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import './footer.css'
 import { IoLogoTiktok } from 'react-icons/io5'
 import { FaInstagram } from 'react-icons/fa6'
-import logo from '../../assets/logo.jpeg'
 
 export type FooterSectionLink = {
   label: string
@@ -24,8 +23,6 @@ export type FooterSocialLink = {
 
 type FooterProps = {
   sections?: FooterSection[]
-  logoSrc?: string
-  logoAlt?: string
   ownerName?: string
   year?: number
   socialLinks?: FooterSocialLink[]
@@ -55,29 +52,27 @@ const defaultSocialLinks: FooterSocialLink[] = [
   {
     label: 'Facebook',
     href: 'https://facebook.com',
-    icon: <TiSocialFacebookCircular size={24} />,
+    icon: <TiSocialFacebookCircular size={22} />,
   },
   {
     label: 'Instagram',
     href: 'https://instagram.com',
-    icon: <FaInstagram size={22} />,
+    icon: <FaInstagram size={19} />,
   },
   {
     label: 'YouTube',
     href: 'https://youtube.com',
-    icon: <TiSocialYoutube size={24} />,
+    icon: <TiSocialYoutube size={22} />,
   },
   {
     label: 'TikTok',
     href: 'https://tiktok.com',
-    icon: <IoLogoTiktok size={20} />,
+    icon: <IoLogoTiktok size={18} />,
   },
 ]
 
 const Footer = ({
   sections = defaultSections,
-  logoSrc = logo,
-  logoAlt = 'Peace Institute logo',
   ownerName = 'sharmarke ali',
   year = new Date().getFullYear(),
   socialLinks = defaultSocialLinks,
@@ -89,8 +84,8 @@ const Footer = ({
     <footer className={footerClassName}>
       <div className="footer__shell">
         <section className="footer__brand">
-          <img src={logoSrc} alt={logoAlt} className="footer__logo" />
-          <h2 className="footer__brand-title">Peace Institute of Language</h2>
+          <p className="footer__brand-mark">PEACE</p>
+          <h2 className="footer__brand-title">Peace Institute</h2>
           <p className="footer__tagline">
             Practical English learning for students, professionals, and teams.
           </p>

@@ -31,7 +31,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-brand">
-          <h1>PEELP</h1>
+          <h1>PEACE</h1>
         </div>
 
         {/* Desktop menu */}
