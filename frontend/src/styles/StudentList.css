@@ -261,6 +261,41 @@
   margin-top: 4px;
 }
 
+/* Category select in table */
+.category-select {
+  padding: 6px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  background: #fafafa;
+  outline: none;
+  cursor: pointer;
+  max-width: 160px;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.15s;
+}
+
+.category-select:hover:not(:disabled) {
+  background: #f5f5ff;
+  border-color: #667eea;
+}
+
+.category-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  background: white;
+}
+
+.category-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.category-select option:disabled {
+  color: #aaa;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .student-list-card {
