@@ -116,7 +116,7 @@ async function loginAsAdmin(page: Page) {
   await page.getByLabel('Email').fill(ADMIN_EMAIL);
   await page.getByLabel('Password').fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Sign In' }).click();
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/admin/users');
 }
 
 // --- Instructor Dashboard -------------------------------------------------------
@@ -134,7 +134,7 @@ test.describe('Instructor Dashboard', () => {
     await page.getByLabel('Email').fill(instructor.email);
     await page.getByLabel('Password').fill(instructor.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/instructor');
 
     await page.goto('/instructor');
     await expect(page.getByRole('heading', { name: 'Instructor Dashboard' })).toBeVisible();

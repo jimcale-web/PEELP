@@ -26,7 +26,7 @@ async function loginAsAdmin(page: Page) {
   await page.getByLabel('Email').fill(ADMIN_EMAIL);
   await page.getByLabel('Password').fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.waitForURL('/');
+  await page.waitForURL('/admin/users');
 }
 
 // ─── Protected routes ─────────────────────────────────────────────────────────
@@ -188,8 +188,8 @@ test.describe('Logout', () => {
     await page.getByLabel('Password').fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await page.waitForURL('/');
-    await expect(page).toHaveURL('/');
+    await page.waitForURL('/admin/users');
+    await expect(page).toHaveURL('/admin/users');
     await expect(page.locator('nav.navbar')).toBeVisible();
   });
 
@@ -229,12 +229,12 @@ test.describe('Error handling', () => {
 
     test('logout network error keeps the user on the current page', async ({ page }) => {
       // Abort the sign-out request. Because logout() throws and handleLogout()
-      // catches the error without calling navigate('/login'), the user stays at '/'.
+      // catches the error without calling navigate('/login'), the user stays where they were.
       await page.route('**/api/auth/sign-out', (route) => route.abort());
       await page.getByRole('button', { name: 'Sign Out' }).click();
 
-      // User remains on the home page (not navigated away)
-      await expect(page).toHaveURL('/');
+      // User remains on the admin dashboard (not navigated away)
+      await expect(page).toHaveURL('/admin/users');
       await expect(page.locator('nav.navbar')).toBeVisible();
     });
   });

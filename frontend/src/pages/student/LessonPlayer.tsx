@@ -16,6 +16,32 @@ import {
 import api from '../../services/api';
 import '../../styles/LessonPlayer.css';
 
+// The <video> tag can only play direct media files (.mp4/.webm/etc). Links to a
+// YouTube/Vimeo watch page aren't playable media — they must be converted to the
+// site's embeddable player URL and rendered in an <iframe> instead.
+function getEmbedVideoUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const videoId = parsed.pathname === '/watch' ? parsed.searchParams.get('v') : parsed.pathname.split('/').pop();
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (host === 'youtu.be') {
+      const videoId = parsed.pathname.slice(1);
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (host === 'vimeo.com') {
+      const videoId = parsed.pathname.split('/').filter(Boolean).pop();
+      return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 interface StudentResource {
   id: string;
   type: string;
@@ -282,9 +308,20 @@ export default function LessonPlayer() {
                         </div>
                       ) : activeResource.type === 'VIDEO' && activeResource.url ? (
                         <div className="lesson-player__video-frame">
-                          <video key={activeResource.id} className="lesson-player__video" src={activeResource.url} controls>
-                            Your browser does not support the video tag.
-                          </video>
+                          {getEmbedVideoUrl(activeResource.url) ? (
+                            <iframe
+                              key={activeResource.id}
+                              className="lesson-player__video lesson-player__video-embed"
+                              src={getEmbedVideoUrl(activeResource.url)!}
+                              title={`${activeLesson.title} video`}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <video key={activeResource.id} className="lesson-player__video" src={activeResource.url} controls>
+                              Your browser does not support the video tag.
+                            </video>
+                          )}
                         </div>
                       ) : activeResource.type === 'PDF' && activeResource.url ? (
                         <iframe

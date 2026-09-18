@@ -6,7 +6,7 @@ import { requireStudent } from '../middleware/require-student.js';
 import { optionalAuth } from '../middleware/optional-auth.js';
 import { asyncHandler } from '../lib/async-handler.js';
 import { prisma } from '../lib/prisma.js';
-import { computeAccessExpiresAt, hasActiveAccessForCategory } from '../lib/access.js';
+import { computeAccessExpiresAt, hasActiveAccess, hasActiveAccessForCategory } from '../lib/access.js';
 
 export const studentsRouter = Router();
 
@@ -90,9 +90,9 @@ studentsRouter.patch('/api/admin/students/:id/access', requireAuth, requireAdmin
 }));
 
 // Admin: approve or reject a student.
-// Approval is independent from a subscription plan. If a duration is supplied, it
-// is applied immediately; otherwise the student can be approved without setting an
-// access window at this stage.
+// Approving a student grants them an access window so they can use the platform
+// right away: the admin-supplied duration is used if provided, otherwise a
+// MONTHLY plan is granted by default (unless the student already has active access).
 const setApprovalSchema = z.object({
   approvalStatus: z.enum(['APPROVED', 'REJECTED']),
   accessDuration: z.enum(['MONTHLY', 'YEARLY']).optional(),
@@ -120,14 +120,21 @@ studentsRouter.patch('/api/admin/students/:id/approval', requireAuth, requireAdm
   }
 
   const now = new Date();
+  // On approval, grant the requested duration, or default to MONTHLY so the
+  // student gets immediate access instead of hitting a "no active subscription"
+  // wall — unless they already have an unexpired access window.
+  const grantedDuration = approvalStatus === 'APPROVED' && !hasActiveAccess(existing.accessExpiresAt)
+    ? accessDuration ?? 'MONTHLY'
+    : accessDuration;
+
   const student = await prisma.user.update({
     where: { id },
     data: {
       approvalStatus,
       updatedAt: now,
-      // Grant category-scoped access for the chosen duration on approval.
-      ...(approvalStatus === 'APPROVED' && accessDuration
-        ? { accessDuration, accessExpiresAt: computeAccessExpiresAt(accessDuration, now) }
+      // Grant category-scoped access for the chosen (or default) duration on approval.
+      ...(approvalStatus === 'APPROVED' && grantedDuration
+        ? { accessDuration: grantedDuration, accessExpiresAt: computeAccessExpiresAt(grantedDuration, now) }
         : {}),
     },
     select: {

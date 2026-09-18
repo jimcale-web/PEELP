@@ -234,8 +234,8 @@ test.describe('Edit User', () => {
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill('NewPass456');
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL('/');
-    await expect(page).toHaveURL('/');
+    await page.waitForURL('/student/courses');
+    await expect(page).toHaveURL('/student/courses');
   });
 
   test('closes the Edit modal on Cancel', async ({ page }) => {

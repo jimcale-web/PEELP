@@ -235,6 +235,10 @@
   object-fit: contain;
 }
 
+.lesson-player__video-embed {
+  border: 0;
+}
+
 .lesson-player__pdf {
   width: 100%;
   height: 65vh;

@@ -142,13 +142,13 @@ test.describe('Login page', () => {
 
   // ─── Success flow ────────────────────────────────────────────────────────────
 
-  test('redirects to home after successful login', async ({ page }) => {
+  test('redirects to the admin dashboard after successful login', async ({ page }) => {
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
     await page.getByLabel('Password').fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await page.waitForURL('/');
-    await expect(page).toHaveURL('/');
+    await page.waitForURL('/admin/users');
+    await expect(page).toHaveURL('/admin/users');
   });
 
   test('clears server error when resubmitting', async ({ page }) => {
@@ -170,7 +170,7 @@ test.describe('Login page', () => {
     await page.getByLabel('Password').fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await page.waitForURL('/');
-    await expect(page).toHaveURL('/');
+    await page.waitForURL('/admin/users');
+    await expect(page).toHaveURL('/admin/users');
   });
 });

@@ -121,7 +121,7 @@ export default async function globalSetup(config: FullConfig) {
   await page.getByLabel('Email').fill(adminEmail);
   await page.getByLabel('Password').fill(adminPassword);
   await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.waitForURL('/');
+  await page.waitForURL('/admin/users');
 
   await context.storageState({ path: AUTH_FILE });
   await browser.close();
