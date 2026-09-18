@@ -17,6 +17,9 @@ const allowedOrigins = [...new Set([...defaultOrigins, ...configuredOrigins])];
 const configuredBaseURL = (process.env.BETTER_AUTH_URL || 'http://localhost:5000')
     .trim()
     .replace(/^(['"])(.*)\1$/, '$2');
+// Railway doesn't set NODE_ENV, so gate on the API actually being served over
+// HTTPS (i.e. deployed, not local dev) rather than an env var nothing sets.
+const isHttpsDeployment = configuredBaseURL.startsWith('https://');
 
 export const auth = betterAuth({
     basePath: '/api/auth',
@@ -36,17 +39,19 @@ export const auth = betterAuth({
         // different *.up.railway.app hosts, so every API call is cross-site. The
         // default SameSite=Lax session cookie is dropped by the browser on the
         // way back to the API, which makes authenticated requests (e.g.
-        // /api/admin/users) look logged-out and return 401. SameSite=None (with
-        // Secure, which HTTPS-only production already requires) lets the cookie
-        // travel with cross-site requests.
-        useSecureCookies: process.env.NODE_ENV === 'production',
-        defaultCookieAttributes:
-            process.env.NODE_ENV === 'production'
-                ? {
-                      sameSite: 'none',
-                      secure: true,
-                  }
-                : undefined,
+        // /api/admin/users) — and optionalAuth-gated ones like the student
+        // course-access check — look logged-out, so approved students still see
+        // everything locked. SameSite=None (with Secure, required alongside it
+        // and already true for HTTPS deployments) lets the cookie travel with
+        // cross-site requests. Railway doesn't set NODE_ENV, so this is keyed
+        // off the deployment actually being HTTPS instead.
+        useSecureCookies: isHttpsDeployment,
+        defaultCookieAttributes: isHttpsDeployment
+            ? {
+                  sameSite: 'none',
+                  secure: true,
+              }
+            : undefined,
     },
     rateLimit: {
         // Disable in test mode — tests make many get-session calls and a separate
