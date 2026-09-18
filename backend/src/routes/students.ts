@@ -89,6 +89,64 @@ studentsRouter.patch('/api/admin/students/:id/access', requireAuth, requireAdmin
   res.json({ student });
 }));
 
+// Admin: set / change a student's enrolled category.
+// A student's access grant only unlocks courses in this category (see
+// hasActiveAccessForCategory), so this must be set for admin-created students
+// since, unlike self-registration, the "Add Student" flow has no category step.
+const setEnrolledCategorySchema = z.object({
+  categoryId: z.string().min(1, 'categoryId is required.'),
+});
+
+studentsRouter.patch('/api/admin/students/:id/category', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const parsed = setEnrolledCategorySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'categoryId is required.' });
+    return;
+  }
+
+  const { id } = req.params;
+  const { categoryId } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: 'Student not found.' });
+    return;
+  }
+  if (existing.role !== 'STUDENT') {
+    res.status(400).json({ error: 'This endpoint is only for students.' });
+    return;
+  }
+
+  const category = await prisma.category.findFirst({ where: { id: categoryId, deletedAt: null } });
+  if (!category) {
+    res.status(400).json({ error: 'The selected category is no longer available.' });
+    return;
+  }
+
+  const student = await prisma.user.update({
+    where: { id },
+    data: { enrolledCategoryId: category.id, updatedAt: new Date() },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      city: true,
+      country: true,
+      phoneNumber: true,
+      enrolledCategoryId: true,
+      enrolledCategory: { select: { id: true, name: true } },
+      accessDuration: true,
+      accessExpiresAt: true,
+      createdAt: true,
+      deletedAt: true,
+    },
+  });
+
+  res.json({ student });
+}));
+
 // Admin: approve or reject a student.
 // Approving a student grants them an access window so they can use the platform
 // right away: the admin-supplied duration is used if provided, otherwise a

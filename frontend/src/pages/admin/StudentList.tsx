@@ -15,6 +15,18 @@ async function fetchStudents(): Promise<StudentRow[]> {
   return res.data.students;
 }
 
+interface CategoryOption {
+  id: string;
+  name: string;
+}
+
+async function fetchCategories(): Promise<CategoryOption[]> {
+  const res = await axios.get<{ categories: CategoryOption[] }>(`${API_URL}/admin/categories`, {
+    withCredentials: true,
+  });
+  return res.data.categories;
+}
+
 export default function StudentList() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -27,6 +39,11 @@ export default function StudentList() {
     queryKey: ['admin', 'students'],
     queryFn: fetchStudents,
   });
+  const { data: categories = [] } = useQuery({
+    queryKey: ['admin', 'categories'],
+    queryFn: fetchCategories,
+  });
+  const [categorySavingId, setCategorySavingId] = useState<string | null>(null);
 
   const pendingCount = students.filter((s) => s.approvalStatus === 'PENDING').length;
 
@@ -72,6 +89,23 @@ export default function StudentList() {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
     } finally {
       setApprovingId(null);
+    }
+  }
+
+  async function setCategory(student: StudentRow, categoryId: string) {
+    if (!categoryId || categorySavingId === student.id) return;
+    setCategorySavingId(student.id);
+    try {
+      await axios.patch(
+        `${API_URL}/admin/students/${student.id}/category`,
+        { categoryId },
+        { withCredentials: true },
+      );
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
+    } catch {
+      // keep existing value on error
+    } finally {
+      setCategorySavingId(null);
     }
   }
 
@@ -166,6 +200,7 @@ export default function StudentList() {
                   <th>Phone</th>
                   <th>Verified</th>
                   <th>Joined</th>
+                  <th>Category</th>
                   <th>Approval</th>
                   <th>Accessibility Duration</th>
                 </tr>
@@ -173,7 +208,7 @@ export default function StudentList() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="no-results">
+                    <td colSpan={9} className="no-results">
                       {search || approvalFilter ? 'No students match your filters.' : 'No students yet.'}
                     </td>
                   </tr>
@@ -199,6 +234,24 @@ export default function StudentList() {
                         </span>
                       </td>
                       <td>{new Date(s.createdAt).toLocaleDateString()}</td>
+
+                      {/* Category column — a student only unlocks courses within this category */}
+                      <td>
+                        <select
+                          className="category-select"
+                          value={s.enrolledCategoryId ?? ''}
+                          onChange={(e) => setCategory(s, e.target.value)}
+                          disabled={categorySavingId === s.id}
+                          title="Enrolled category (controls which courses this student can access)"
+                        >
+                          <option value="" disabled>
+                            {s.enrolledCategory ? s.enrolledCategory.name : 'Select category…'}
+                          </option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </td>
 
                       {/* Approval column */}
                       <td>
