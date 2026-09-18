@@ -32,6 +32,21 @@ export const auth = betterAuth({
         ipAddress: {
             ipAddressHeaders: ['x-forwarded-for'],
         },
+        // The frontend and backend are deployed as separate Railway services on
+        // different *.up.railway.app hosts, so every API call is cross-site. The
+        // default SameSite=Lax session cookie is dropped by the browser on the
+        // way back to the API, which makes authenticated requests (e.g.
+        // /api/admin/users) look logged-out and return 401. SameSite=None (with
+        // Secure, which HTTPS-only production already requires) lets the cookie
+        // travel with cross-site requests.
+        useSecureCookies: process.env.NODE_ENV === 'production',
+        defaultCookieAttributes:
+            process.env.NODE_ENV === 'production'
+                ? {
+                      sameSite: 'none',
+                      secure: true,
+                  }
+                : undefined,
     },
     rateLimit: {
         // Disable in test mode — tests make many get-session calls and a separate

@@ -154,7 +154,7 @@ export default function InstructorDashboard() {
                   type="text"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Introduction to Python"
+                  placeholder="English Course"
                 />
               </div>
 
