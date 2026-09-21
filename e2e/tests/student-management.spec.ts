@@ -71,6 +71,28 @@ async function addStudent(
   await expect(page.getByRole('cell', { name: email, exact: true })).toBeVisible();
 }
 
+async function createCategoryForAccess(page: Page) {
+  const name = `Access Category ${uid()}`;
+  await page.goto('/admin/categories');
+  await expect(page.getByRole('table')).toBeVisible();
+  await page.getByRole('button', { name: '+ New Category' }).click();
+
+  const m = modal(page);
+  await m.getByLabel('Name').fill(name);
+  await m.getByRole('button', { name: 'Create Category' }).click();
+  await expect(m.getByRole('heading', { name: 'Create New Category' })).not.toBeVisible();
+  return name;
+}
+
+async function assignAccessCategory(page: Page, email: string, categoryName: string) {
+  await gotoStudentManagement(page);
+  const row = page.getByRole('row', { name: new RegExp(email) });
+  const categorySelect = row.locator('select.category-select');
+  await categorySelect.selectOption({ label: categoryName });
+  await expect(categorySelect).toHaveValue(/.+/);
+  return row;
+}
+
 // ---------------------------------------------------------------------------
 // Page rendering
 // ---------------------------------------------------------------------------
@@ -349,7 +371,7 @@ test.describe('Student Management — approval', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Student Management — accessibility duration', () => {
-  test('Monthly button becomes active when clicked', async ({ page }) => {
+  test('requires a course category before granting access', async ({ page }) => {
     await gotoStudentManagement(page);
 
     const email = testEmail('duration-monthly');
@@ -360,21 +382,24 @@ test.describe('Student Management — accessibility duration', () => {
 
     await expect(monthlyBtn).not.toHaveClass(/duration-btn--active/);
     await monthlyBtn.click();
-    await expect(monthlyBtn).toHaveClass(/duration-btn--active/);
+    await expect(row.getByRole('alert')).toHaveText('Select a course category before granting access.');
+    await expect(monthlyBtn).not.toHaveClass(/duration-btn--active/);
   });
 
-  test('Yearly button becomes active when clicked', async ({ page }) => {
+  test('sets the selected category and monthly access together', async ({ page }) => {
     await gotoStudentManagement(page);
 
-    const email = testEmail('duration-yearly');
-    await addStudent(page, { name: 'Yearly Student', email });
+    const email = testEmail('duration-monthly');
+    await addStudent(page, { name: 'Monthly Student', email });
+    const categoryName = await createCategoryForAccess(page);
+    const row = await assignAccessCategory(page, email, categoryName);
 
-    const row = page.getByRole('row', { name: new RegExp(email) });
-    const yearlyBtn = row.getByRole('button', { name: 'Yearly' });
+    const monthlyBtn = row.getByRole('button', { name: 'Monthly' });
+    await monthlyBtn.click();
 
-    await expect(yearlyBtn).not.toHaveClass(/duration-btn--active/);
-    await yearlyBtn.click();
-    await expect(yearlyBtn).toHaveClass(/duration-btn--active/);
+    await expect(row.locator('select.category-select')).toHaveText(categoryName);
+    await expect(monthlyBtn).toHaveClass(/duration-btn--active/);
+    await expect(row.locator('.duration-expiry')).toContainText('Expires');
   });
 
   test('switching from Monthly to Yearly updates the active button', async ({ page }) => {
@@ -382,8 +407,9 @@ test.describe('Student Management — accessibility duration', () => {
 
     const email = testEmail('duration-switch');
     await addStudent(page, { name: 'Switch Duration', email });
+    const categoryName = await createCategoryForAccess(page);
+    const row = await assignAccessCategory(page, email, categoryName);
 
-    const row = page.getByRole('row', { name: new RegExp(email) });
     const monthlyBtn = row.getByRole('button', { name: 'Monthly' });
     const yearlyBtn = row.getByRole('button', { name: 'Yearly' });
 
@@ -400,8 +426,9 @@ test.describe('Student Management — accessibility duration', () => {
 
     const email = testEmail('expiry-date');
     await addStudent(page, { name: 'Expiry Check', email });
+    const categoryName = await createCategoryForAccess(page);
+    const row = await assignAccessCategory(page, email, categoryName);
 
-    const row = page.getByRole('row', { name: new RegExp(email) });
     await row.getByRole('button', { name: 'Monthly' }).click();
 
     await expect(row.locator('.duration-expiry')).toBeVisible();
@@ -493,4 +520,3 @@ test.describe('Student Management — search and filter', () => {
     await expect(page.getByRole('cell', { name: email, exact: true })).toBeVisible();
   });
 });
-

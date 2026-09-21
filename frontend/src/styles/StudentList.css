@@ -258,7 +258,15 @@
 .duration-expiry {
   font-size: 11px;
   color: #aaa;
-  margin-top: 4px;
+}
+
+.duration-error {
+  margin: 4px 0 0;
+  max-width: 220px;
+  color: #b42318;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: normal;
 }
 
 /* Category select in table */

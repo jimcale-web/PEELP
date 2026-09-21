@@ -36,10 +36,12 @@ studentsRouter.get('/api/admin/students', requireAuth, requireAdmin, asyncHandle
   res.json({ students });
 }));
 
-// Admin: set / update a student's accessibility duration (MONTHLY or YEARLY).
-// Each call resets the expiry from "now": +1 month for MONTHLY, +1 year for YEARLY.
+// Admin: grant category-scoped access for a fixed duration.
+// A student must have both an active expiry and a matching enrolled category to
+// unlock paid resources, so persist them together instead of creating a partial grant.
 const setAccessDurationSchema = z.object({
   accessDuration: z.enum(['MONTHLY', 'YEARLY']),
+  categoryId: z.string().min(1, 'categoryId is required.'),
 });
 
 studentsRouter.patch('/api/admin/students/:id/access', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
@@ -50,7 +52,7 @@ studentsRouter.patch('/api/admin/students/:id/access', requireAuth, requireAdmin
   }
 
   const { id } = req.params;
-  const { accessDuration } = parsed.data;
+  const { accessDuration, categoryId } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { id } });
   if (!existing) {
@@ -62,12 +64,26 @@ studentsRouter.patch('/api/admin/students/:id/access', requireAuth, requireAdmin
     return;
   }
 
+  const category = await prisma.category.findFirst({
+    where: { id: categoryId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!category) {
+    res.status(400).json({ error: 'The selected category is no longer available.' });
+    return;
+  }
+
   const now = new Date();
   const accessExpiresAt = computeAccessExpiresAt(accessDuration, now);
 
   const student = await prisma.user.update({
     where: { id },
-    data: { accessDuration, accessExpiresAt, updatedAt: now },
+    data: {
+      accessDuration,
+      accessExpiresAt,
+      enrolledCategoryId: category.id,
+      updatedAt: now,
+    },
     select: {
       id: true,
       name: true,

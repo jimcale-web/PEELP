@@ -26,11 +26,11 @@ function getEmbedVideoUrl(url: string): string | null {
 
     if (host === 'youtube.com' || host === 'm.youtube.com') {
       const videoId = parsed.pathname === '/watch' ? parsed.searchParams.get('v') : parsed.pathname.split('/').pop();
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+      return videoId ? getYouTubeEmbedUrl(videoId) : null;
     }
     if (host === 'youtu.be') {
       const videoId = parsed.pathname.slice(1);
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+      return videoId ? getYouTubeEmbedUrl(videoId) : null;
     }
     if (host === 'vimeo.com') {
       const videoId = parsed.pathname.split('/').filter(Boolean).pop();
@@ -40,6 +40,16 @@ function getEmbedVideoUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+function getYouTubeEmbedUrl(videoId: string): string {
+  const embedUrl = new URL(`https://www.youtube-nocookie.com/embed/${videoId}`);
+  embedUrl.search = new URLSearchParams({
+    modestbranding: '1',
+    playsinline: '1',
+    rel: '0',
+  }).toString();
+  return embedUrl.toString();
 }
 
 interface StudentResource {
@@ -273,8 +283,18 @@ export default function LessonPlayer() {
           <section className="lesson-player__content" aria-label="Lesson content">
             {activeLesson ? (
               <>
-                <h2>{activeLesson.title}</h2>
-                {activeLesson.description && <p className="lesson-player__description">{activeLesson.description}</p>}
+                <header className="lesson-player__lesson-header">
+                  <div>
+                    <p className="lesson-player__eyebrow">
+                      {activeLesson.sectionTitle}
+                    </p>
+                    <h2>{activeLesson.title}</h2>
+                    {activeLesson.description && <p className="lesson-player__description">{activeLesson.description}</p>}
+                  </div>
+                  <span className="lesson-player__lesson-progress">
+                    Lesson {allLessons.findIndex((lesson) => lesson.id === activeLesson.id) + 1} of {allLessons.length}
+                  </span>
+                </header>
 
                 {activeLesson.resources.length === 0 ? (
                   <p className="lesson-player__message">No materials have been added to this lesson yet.</p>

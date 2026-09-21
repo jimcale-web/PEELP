@@ -34,6 +34,7 @@ export default function StudentList() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [accessErrorByStudentId, setAccessErrorByStudentId] = useState<Record<string, string>>({});
 
   const { data: students = [], isLoading, isError } = useQuery({
     queryKey: ['admin', 'students'],
@@ -62,16 +63,32 @@ export default function StudentList() {
 
   async function setDuration(student: StudentRow, duration: 'MONTHLY' | 'YEARLY') {
     if (savingId === student.id) return;
+    if (!student.enrolledCategoryId) {
+      setAccessErrorByStudentId((errors) => ({
+        ...errors,
+        [student.id]: 'Select a course category before granting access.',
+      }));
+      return;
+    }
+
     setSavingId(student.id);
+    setAccessErrorByStudentId((errors) => {
+      const remainingErrors = { ...errors };
+      delete remainingErrors[student.id];
+      return remainingErrors;
+    });
     try {
       await axios.patch(
         `${API_URL}/admin/students/${student.id}/access`,
-        { accessDuration: duration },
+        { accessDuration: duration, categoryId: student.enrolledCategoryId },
         { withCredentials: true },
       );
       await queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-    } catch {
-      // keep existing value on error
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error ?? 'Failed to grant access. Please try again.'
+        : 'Failed to grant access. Please try again.';
+      setAccessErrorByStudentId((errors) => ({ ...errors, [student.id]: message }));
     } finally {
       setSavingId(null);
     }
@@ -102,8 +119,11 @@ export default function StudentList() {
         { withCredentials: true },
       );
       await queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-    } catch {
-      // keep existing value on error
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error ?? 'Failed to update the course category. Please try again.'
+        : 'Failed to update the course category. Please try again.';
+      setAccessErrorByStudentId((errors) => ({ ...errors, [student.id]: message }));
     } finally {
       setCategorySavingId(null);
     }
@@ -310,6 +330,11 @@ export default function StudentList() {
                             Expires {new Date(s.accessExpiresAt).toLocaleDateString()}
                           </div>
                         )}
+                        {accessErrorByStudentId[s.id] && (
+                          <p className="duration-error" role="alert">
+                            {accessErrorByStudentId[s.id]}
+                          </p>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -322,4 +347,3 @@ export default function StudentList() {
     </div>
   );
 }
-
