@@ -56,8 +56,16 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     setServerError('');
     try {
-      await login(data.email, data.password);
-      navigate('/');
+      const user = await login(data.email, data.password);
+      if (user.role === 'ADMIN') {
+        navigate('/admin');
+      } else if (user.role === 'INSTRUCTOR') {
+        navigate('/instructor');
+      } else if (user.role === 'STUDENT') {
+        navigate('/student/courses');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setServerError(resolveLoginError(err));
     }

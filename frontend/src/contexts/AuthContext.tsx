@@ -14,7 +14,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
       const response = await api.post('/auth/sign-in/email', {
@@ -53,11 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (response.data?.user) {
-        setUser(response.data.user);
+        const loggedInUser: User = response.data.user;
+        setUser(loggedInUser);
         // better-auth stores session automatically in cookies
         if (response.data?.token) {
           localStorage.setItem('authToken', response.data.token);
         }
+        return loggedInUser;
       } else {
         throw new Error('Login failed: No user data returned');
       }
