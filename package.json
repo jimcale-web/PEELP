@@ -11,6 +11,7 @@
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
+    "build:railway": "npm run build:railway:backend && npm run build:railway:frontend",
     "build:all": "npm run build:railway:backend && npm run build:frontend",
     "build:railway:backend": "cd backend && npm ci --include=dev && npm run prisma:generate && npm run build",
     "build:railway:frontend": "cd frontend && npm ci --include=dev && npm run build",
@@ -46,3 +47,4 @@
     "react-icons": "^5.7.0"
   }
 }
+
