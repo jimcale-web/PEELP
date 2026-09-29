@@ -1,7 +1,6 @@
 /* Home Page Styles */
 .home-container {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding-top: 40px;
   align-items: center;
 }
 
@@ -18,7 +17,6 @@
 
 @media (max-width: 480px) {
   .home-container {
-    padding: 24px 12px;
     align-items: flex-start;
   }
 }
