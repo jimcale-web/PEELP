@@ -83,28 +83,6 @@ const Footer = ({
   return (
     <footer className={footerClassName}>
       <div className="footer__shell">
-        <section className="footer__brand">
-          <p className="footer__brand-mark">PEACE</p>
-          <h2 className="footer__brand-title">Peace Institute</h2>
-          <p className="footer__tagline">
-            Practical English learning for students, professionals, and teams.
-          </p>
-          <div className="footer__socials" aria-label="Social media links">
-            {socialLinks.map((social) => (
-              <a
-                key={social.label}
-                className="footer__social-link"
-                href={social.href}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={social.label}
-              >
-                {social.icon}
-              </a>
-            ))}
-          </div>
-        </section>
-
         <div className="footer__links-grid">
           {sections.map((section) => (
             <section key={section.title} className="footer__column">
@@ -125,6 +103,22 @@ const Footer = ({
             </section>
           ))}
         </div>
+        <section className="footer__brand">
+          <div className="footer__socials" aria-label="Social media links">
+            {socialLinks.map((social) => (
+              <a
+                key={social.label}
+                className="footer__social-link"
+                href={social.href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={social.label}
+              >
+                {social.icon}
+              </a>
+            ))}
+          </div>
+        </section>
       </div>
 
       <div className="footer__bottom">

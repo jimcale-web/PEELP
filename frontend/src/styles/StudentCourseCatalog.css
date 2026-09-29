@@ -16,15 +16,6 @@
   margin-bottom: 24px;
 }
 
-.student-course-catalog__eyebrow {
-  margin: 0 0 6px;
-  color: #4f46e5;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .student-course-catalog__header h1 {
   margin: 0;
   color: #1f2937;
@@ -34,16 +25,6 @@
 .student-course-catalog__header p:not(.student-course-catalog__eyebrow) {
   margin: 8px 0 0;
   color: #64748b;
-}
-
-.student-course-catalog__count {
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #4338ca;
-  padding: 8px 12px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .student-course-catalog__search input {

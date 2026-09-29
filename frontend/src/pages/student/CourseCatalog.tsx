@@ -43,11 +43,9 @@ export default function CourseCatalog() {
       <div className="student-course-catalog__content">
         <header className="student-course-catalog__header">
           <div>
-            <p className="student-course-catalog__eyebrow">Learning library</p>
             <h1>Explore Courses</h1>
             <p>Find a course and start learning at your own pace.</p>
           </div>
-          {!isLoading && <span className="student-course-catalog__count">{courses.length} courses</span>}
         </header>
 
         <label className="student-course-catalog__search" htmlFor="course-search">
