@@ -39,6 +39,7 @@ coursesRouter.get('/api/public/courses', asyncHandler(async (_req, res) => {
       id: true,
       title: true,
       description: true,
+      thumbnailUrl: true,
       instructor: { select: { id: true, name: true } },
       category: { select: { id: true, name: true } },
       _count: { select: { sections: { where: { deletedAt: null } } } },

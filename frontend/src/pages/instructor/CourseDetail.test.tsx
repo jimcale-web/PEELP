@@ -182,7 +182,7 @@ describe('CourseDetail', () => {
       await user.click(addButton);
 
       expect(screen.getByLabelText('Section Title')).toBeInTheDocument();
-      expect(screen.getByLabelText('Description')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Description')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create section/i })).toBeInTheDocument();
     });
 
@@ -204,7 +204,7 @@ describe('CourseDetail', () => {
       const newSection = {
         id: 'section-3',
         title: 'Advanced Topics',
-        description: 'Learn advanced React patterns',
+        description: null,
         order: 2,
         createdAt: '2024-01-16T10:00:00.000Z',
         updatedAt: '2024-01-16T10:00:00.000Z',
@@ -230,9 +230,7 @@ describe('CourseDetail', () => {
 
       // Fill form
       const titleInput = screen.getByLabelText('Section Title');
-      const descInput = screen.getByLabelText('Description');
       await user.type(titleInput, 'Advanced Topics');
-      await user.type(descInput, 'Learn advanced React patterns');
 
       // Submit
       const createButton = screen.getByRole('button', { name: /create section/i });
@@ -243,7 +241,6 @@ describe('CourseDetail', () => {
         expect(screen.getByText('3. Advanced Topics')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Learn advanced React patterns')).toBeInTheDocument();
       expect(titleInput).not.toBeInTheDocument();
     });
 

@@ -96,7 +96,6 @@ async function createLessonAndOpenResourceForm(user: ReturnType<typeof userEvent
 
   await openLessonForm(user);
   await user.type(screen.getByLabelText('Lesson Title'), 'Props and State');
-  await user.type(screen.getByLabelText('Lesson Description'), 'Understand component state and props');
   await user.click(screen.getByRole('button', { name: /create lesson/i }));
 
   await waitFor(() => {
@@ -127,7 +126,7 @@ describe('CourseDetail - Lesson creation', () => {
     await openLessonForm(user);
 
     expect(screen.getByLabelText('Lesson Title')).toBeInTheDocument();
-    expect(screen.getByLabelText('Lesson Description')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Lesson Description')).not.toBeInTheDocument();
   });
 
   it('shows a validation error when submitting without a title', async () => {

@@ -71,20 +71,24 @@ export default function CourseDetail() {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [showLessonForms, setShowLessonForms] = useState<Record<string, boolean>>({});
-  const [lessonDrafts, setLessonDrafts] = useState<Record<string, { title: string; description: string }>>({});
+  const [lessonDrafts, setLessonDrafts] = useState<Record<string, { title: string }>>({});
   const [lessonErrors, setLessonErrors] = useState<Record<string, string>>({});
   const [showResourceForms, setShowResourceForms] = useState<Record<string, boolean>>({});
   const [resourceDrafts, setResourceDrafts] = useState<Record<string, { type: string; url: string; isFree: boolean }>>({});
   const [resourceErrors, setResourceErrors] = useState<Record<string, string>>({});
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [thumbnailError, setThumbnailError] = useState('');
+  const [editingCourse, setEditingCourse] = useState(false);
+  const [courseTitle, setCourseTitle] = useState('');
+  const [courseDescription, setCourseDescription] = useState('');
+  const [courseSaving, setCourseSaving] = useState(false);
+  const [courseEditError, setCourseEditError] = useState('');
 
   const { data: course, isLoading: courseLoading, isError: courseError } = useQuery({
     queryKey: ['instructor', 'course', courseId],
@@ -109,11 +113,9 @@ export default function CourseDetail() {
       setSubmitting(true);
       await api.post(`/instructor/courses/${courseId}/sections`, {
         title: title.trim(),
-        description: description.trim(),
         order: sections.length,
       });
       setTitle('');
-      setDescription('');
       setShowCreateForm(false);
       await queryClient.invalidateQueries({ queryKey: ['instructor', 'sections', courseId] });
     } catch (err: unknown) {
@@ -153,7 +155,7 @@ export default function CourseDetail() {
   };
 
   const handleCreateLesson = async (sectionId: string) => {
-    const draft = lessonDrafts[sectionId] ?? { title: '', description: '' };
+    const draft = lessonDrafts[sectionId] ?? { title: '' };
     const message = draft.title.trim() ? '' : 'Lesson title is required.';
     setLessonErrors((current) => ({ ...current, [sectionId]: message }));
     if (message) {
@@ -164,10 +166,9 @@ export default function CourseDetail() {
       const sectionLessons = sections.find((section) => section.id === sectionId)?.lessons ?? [];
       await api.post(`/instructor/courses/${courseId}/sections/${sectionId}/lessons`, {
         title: draft.title.trim(),
-        description: draft.description.trim(),
         order: sectionLessons.length,
       });
-      setLessonDrafts((current) => ({ ...current, [sectionId]: { title: '', description: '' } }));
+      setLessonDrafts((current) => ({ ...current, [sectionId]: { title: '' } }));
       setShowLessonForms((current) => ({ ...current, [sectionId]: false }));
       setLessonErrors((current) => ({ ...current, [sectionId]: '' }));
       await queryClient.invalidateQueries({ queryKey: ['instructor', 'sections', courseId] });
@@ -312,6 +313,7 @@ export default function CourseDetail() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       await queryClient.invalidateQueries({ queryKey: ['instructor', 'course', courseId] });
+      await queryClient.invalidateQueries({ queryKey: ['instructor', 'courses'] });
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setThumbnailError(err.response?.data?.error ?? 'Unable to upload thumbnail.');
@@ -337,6 +339,7 @@ export default function CourseDetail() {
       setThumbnailUploading(true);
       await api.delete(`/instructor/courses/${courseId}/thumbnail`);
       await queryClient.invalidateQueries({ queryKey: ['instructor', 'course', courseId] });
+      await queryClient.invalidateQueries({ queryKey: ['instructor', 'courses'] });
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setThumbnailError(err.response?.data?.error ?? 'Unable to remove thumbnail.');
@@ -349,6 +352,40 @@ export default function CourseDetail() {
       setThumbnailError('Unable to remove thumbnail.');
     } finally {
       setThumbnailUploading(false);
+    }
+  };
+
+  const handleCourseEdit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCourseEditError('');
+
+    if (!courseTitle.trim()) {
+      setCourseEditError('Course title is required.');
+      return;
+    }
+
+    try {
+      setCourseSaving(true);
+      await api.patch(`/instructor/courses/${courseId}`, {
+        title: courseTitle.trim(),
+        description: courseDescription.trim(),
+        categoryId: course?.categoryId ?? '',
+      });
+      setEditingCourse(false);
+      await queryClient.invalidateQueries({ queryKey: ['instructor', 'course', courseId] });
+      await queryClient.invalidateQueries({ queryKey: ['instructor', 'courses'] });
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setCourseEditError(err.response?.data?.error ?? 'Unable to update course. Please try again.');
+        return;
+      }
+      if (err instanceof Error) {
+        setCourseEditError(err.message);
+        return;
+      }
+      setCourseEditError('Unable to update course. Please try again.');
+    } finally {
+      setCourseSaving(false);
     }
   };
 
@@ -438,10 +475,65 @@ export default function CourseDetail() {
             </div>
             {thumbnailError && <div className="instructor-error">{thumbnailError}</div>}
           </div>
-          <div>
-            <h1>{course?.title}</h1>
-            <p className="course-detail-description">{course?.description || 'No description provided.'}</p>
-            {course?.category && <p className="course-detail-category">Category: {course.category.name}</p>}
+          <div className="course-detail-info">
+            {editingCourse ? (
+              <form className="course-edit-form" onSubmit={handleCourseEdit}>
+                <div className="form-field">
+                  <label htmlFor="course-edit-title">Course title</label>
+                  <input
+                    id="course-edit-title"
+                    type="text"
+                    value={courseTitle}
+                    onChange={(event) => setCourseTitle(event.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="course-edit-description">Description</label>
+                  <textarea
+                    id="course-edit-description"
+                    value={courseDescription}
+                    onChange={(event) => setCourseDescription(event.target.value)}
+                    rows={4}
+                  />
+                </div>
+                {courseEditError && <div className="form-error" role="alert">{courseEditError}</div>}
+                <div className="edit-actions">
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={() => {
+                      setEditingCourse(false);
+                      setCourseEditError('');
+                    }}
+                    disabled={courseSaving}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="submit-btn" disabled={courseSaving}>
+                    {courseSaving ? 'Saving...' : 'Save Course'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <h1>{course?.title}</h1>
+                <p className="course-detail-description">{course?.description || 'No description provided.'}</p>
+                {course?.category && <p className="course-detail-category">Category: {course.category.name}</p>}
+                <button
+                  type="button"
+                  className="course-detail-edit-btn"
+                  onClick={() => {
+                    setCourseTitle(course?.title ?? '');
+                    setCourseDescription(course?.description ?? '');
+                    setCourseEditError('');
+                    setEditingCourse(true);
+                  }}
+                >
+                  Edit Course Details
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -466,16 +558,6 @@ export default function CourseDetail() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Introduction to Topics"
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="section-description">Description</label>
-              <textarea
-                id="section-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe what students will learn in this section"
               />
             </div>
 
@@ -585,22 +667,6 @@ export default function CourseDetail() {
                                   ...current,
                                   [section.id]: {
                                     title: event.target.value,
-                                    description: current[section.id]?.description ?? '',
-                                  },
-                                }))}
-                              />
-                            </div>
-
-                            <div className="form-field">
-                              <label htmlFor={`lesson-description-${section.id}`}>Lesson Description</label>
-                              <textarea
-                                id={`lesson-description-${section.id}`}
-                                value={lessonDrafts[section.id]?.description ?? ''}
-                                onChange={(event) => setLessonDrafts((current) => ({
-                                  ...current,
-                                  [section.id]: {
-                                    title: current[section.id]?.title ?? '',
-                                    description: event.target.value,
                                   },
                                 }))}
                               />

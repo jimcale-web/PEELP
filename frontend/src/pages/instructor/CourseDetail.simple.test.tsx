@@ -91,6 +91,49 @@ describe('CourseDetail Component', () => {
     expect(screen.getByText('Category: Programming')).toBeInTheDocument();
   });
 
+  it('lets an instructor edit a course title and description', async () => {
+    const user = userEvent.setup();
+    let updatedCourse = { ...mockCourse };
+    let submittedBody: Record<string, unknown> | undefined;
+
+    server.use(
+      http.get('http://localhost:5000/api/instructor/courses/:courseId', () =>
+        HttpResponse.json({ course: updatedCourse }),
+      ),
+      http.patch(
+        'http://localhost:5000/api/instructor/courses/:courseId',
+        async ({ request }) => {
+          submittedBody = await request.json() as Record<string, unknown>;
+          updatedCourse = {
+            ...updatedCourse,
+            title: String(submittedBody.title),
+            description: String(submittedBody.description),
+          };
+          return HttpResponse.json({ course: updatedCourse });
+        },
+      ),
+    );
+
+    renderCourseDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Edit Course Details' }));
+    const titleInput = screen.getByLabelText('Course title');
+    const descriptionInput = screen.getByLabelText('Description');
+    await user.clear(titleInput);
+    await user.type(titleInput, 'React for Beginners');
+    await user.clear(descriptionInput);
+    await user.type(descriptionInput, 'A complete introduction to React.');
+    await user.click(screen.getByRole('button', { name: 'Save Course' }));
+
+    expect(await screen.findByRole('heading', { name: 'React for Beginners' })).toBeInTheDocument();
+    expect(screen.getByText('A complete introduction to React.')).toBeInTheDocument();
+    expect(submittedBody).toMatchObject({
+      title: 'React for Beginners',
+      description: 'A complete introduction to React.',
+      categoryId: 'cat-1',
+    });
+  });
+
   it('renders existing sections', async () => {
     renderCourseDetail();
 
@@ -109,7 +152,7 @@ describe('CourseDetail Component', () => {
     await user.click(addButton);
 
     expect(screen.getByLabelText('Section Title')).toBeInTheDocument();
-    expect(screen.getByLabelText('Description')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Description')).not.toBeInTheDocument();
   });
 
   it('creates a new section', async () => {
@@ -117,7 +160,7 @@ describe('CourseDetail Component', () => {
     const newSection = {
       id: 'section-2',
       title: 'Advanced Topics',
-      description: 'Learn advanced React patterns',
+      description: null,
       order: 1,
       createdAt: '2024-01-16T10:00:00.000Z',
       updatedAt: '2024-01-16T10:00:00.000Z',
@@ -125,9 +168,10 @@ describe('CourseDetail Component', () => {
     };
 
     server.use(
-      http.post('http://localhost:5000/api/instructor/courses/:courseId/sections', () =>
-        HttpResponse.json({ section: newSection }, { status: 201 }),
-      ),
+      http.post('http://localhost:5000/api/instructor/courses/:courseId/sections', async ({ request }) => {
+        expect(await request.json()).toMatchObject({ title: 'Advanced Topics', order: 1 });
+        return HttpResponse.json({ section: newSection }, { status: 201 });
+      }),
       http.get('http://localhost:5000/api/instructor/courses/:courseId/sections', () =>
         HttpResponse.json({ sections: [...mockSections, newSection] }),
       ),
@@ -144,9 +188,7 @@ describe('CourseDetail Component', () => {
 
     // Fill form
     const titleInput = screen.getByLabelText('Section Title');
-    const descInput = screen.getByLabelText('Description');
     await user.type(titleInput, 'Advanced Topics');
-    await user.type(descInput, 'Learn advanced React patterns');
 
     // Submit
     const createButton = screen.getByRole('button', { name: /create section/i });
@@ -183,8 +225,12 @@ describe('CourseDetail Component', () => {
     };
 
     server.use(
-      http.post('http://localhost:5000/api/instructor/courses/:courseId/sections/:sectionId/lessons', () =>
-        HttpResponse.json({ lesson: newLesson }, { status: 201 }),
+      http.post(
+        'http://localhost:5000/api/instructor/courses/:courseId/sections/:sectionId/lessons',
+        async ({ request }) => {
+          expect(await request.json()).toMatchObject({ title: 'Props and State', order: 0 });
+          return HttpResponse.json({ lesson: newLesson }, { status: 201 });
+        },
       ),
       http.post('http://localhost:5000/api/instructor/courses/:courseId/sections/:sectionId/lessons/:lessonId/resources', async ({ request }) => {
         expect(await request.json()).toMatchObject({
@@ -206,11 +252,13 @@ describe('CourseDetail Component', () => {
     );
 
     renderCourseDetail();
+
     await screen.findByText('1. Getting Started');
 
     await user.click(screen.getByRole('button', { name: /add lesson/i }));
+    expect(screen.getByLabelText('Lesson Title')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Lesson Description')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Lesson Title'), 'Props and State');
-    await user.type(screen.getByLabelText('Lesson Description'), 'Understand component state and props');
     await user.click(screen.getByRole('button', { name: /create lesson/i }));
 
     await waitFor(() => {
@@ -249,7 +297,7 @@ describe('CourseDetail Component', () => {
       ),
     );
 
-    const editButton = screen.getByRole('button', { name: /edit/i });
+    const editButton = screen.getByRole('button', { name: /^Edit$/ });
     await user.click(editButton);
 
     const titleInput = screen.getByDisplayValue('Getting Started');

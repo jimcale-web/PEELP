@@ -34,7 +34,7 @@
 }
 
 .hero__heading span {
-  color: #4f46e5;
+  color: #22d3ee;
 }
 
 .hero__description {
@@ -76,13 +76,13 @@
 }
 
 .hero__button--primary {
-  background: #4f46e5;
+  background: #22d3ee;
   box-shadow: 0 10px 22px rgba(79, 70, 229, 0.26);
   color: #fff;
 }
 
 .hero__button--primary:hover {
-  background: #4338ca;
+  background: #2ad7f2;
   box-shadow: 0 13px 25px rgba(79, 70, 229, 0.32);
 }
 
@@ -175,7 +175,7 @@
 @media (min-width: 960px) {
   .hero {
     padding-inline: 2rem;
-    padding-top: 0;
+    padding-top: 3rem;
   }
 
   .hero__grid {

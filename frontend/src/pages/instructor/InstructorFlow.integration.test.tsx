@@ -215,10 +215,8 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
       await user.click(addSectionBtn);
 
       const sectionTitleInput = screen.getByLabelText('Section Title');
-      const sectionDescInput = screen.getByLabelText('Description');
 
       await user.type(sectionTitleInput, 'TypeScript Fundamentals');
-      await user.type(sectionDescInput, 'Learn TS basics: types, interfaces, and generics');
 
       const createSectionBtn = screen.getByRole('button', { name: /create section/i });
       await user.click(createSectionBtn);
@@ -228,20 +226,13 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
         expect(screen.getByText('1. TypeScript Fundamentals')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Learn TS basics: types, interfaces, and generics')).toBeInTheDocument();
-
       // Step 10: Add second section
       const addSectionBtn2 = screen.getByRole('button', { name: /add section/i });
       await user.click(addSectionBtn2);
 
       const sectionTitleInput2 = screen.getByLabelText('Section Title');
-      const sectionDescInput2 = screen.getByLabelText('Description');
 
       await user.type(sectionTitleInput2, 'Advanced Patterns');
-      await user.type(
-        sectionDescInput2,
-        'Master decorators, mixins, and advanced type patterns',
-      );
 
       const createSectionBtn2 = screen.getByRole('button', { name: /create section/i });
       await user.click(createSectionBtn2);
@@ -252,8 +243,6 @@ describe('Instructor Course Flow: Create Course and Add Sections', () => {
       });
 
       expect(screen.getByText('1. TypeScript Fundamentals')).toBeInTheDocument();
-      expect(screen.getByText('Learn TS basics: types, interfaces, and generics')).toBeInTheDocument();
-      expect(screen.getByText('Master decorators, mixins, and advanced type patterns')).toBeInTheDocument();
     });
 
     it('allows editing a section after creation', async () => {

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import CourseCatalog from './CourseCatalog';
@@ -12,9 +13,11 @@ function renderCourseCatalog() {
   });
 
   return render(
-    <QueryClientProvider client={queryClient}>
-      <CourseCatalog />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <CourseCatalog />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -29,12 +32,19 @@ describe('CourseCatalog', () => {
     renderCourseCatalog();
 
     expect(await screen.findByText('Introduction to Python')).toBeInTheDocument();
+    const courseThumbnail = screen.getByRole('img', { name: 'Introduction to Python thumbnail' });
+    expect(courseThumbnail)
+      .toHaveAttribute('src', 'http://localhost:5000/uploads/thumbnails/python.jpg');
+    expect(courseThumbnail).toHaveClass('student-course-card__thumbnail');
+    expect(courseThumbnail.closest('article')?.querySelector('.student-course-card__thumbnail--placeholder'))
+      .toBeNull();
     expect(screen.getByText('Programming')).toBeInTheDocument();
     expect(screen.getByText('Bob Instructor')).toBeInTheDocument();
     expect(screen.getByText('3 sections')).toBeInTheDocument();
     expect(screen.getByText('General')).toBeInTheDocument();
     expect(screen.getByText('PEELP instructor')).toBeInTheDocument();
     expect(screen.getByText('1 section')).toBeInTheDocument();
+    expect(screen.getByText('Course preview')).toHaveClass('student-course-card__thumbnail--placeholder');
   });
 
   it('filters courses by title, category, and instructor', async () => {
