@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import EyeIcon from '../components/EyeIcon';
 import '../styles/Login.css';
 
 const loginSchema = z.object({
@@ -40,6 +41,7 @@ function resolveLoginError(err: unknown): string {
 
 export default function Login() {
   const [serverError, setServerError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,8 +59,12 @@ export default function Login() {
     setServerError('');
     try {
       const user = await login(data.email, data.password);
-      if (user.role === 'ADMIN') {
-        navigate('/admin');
+      if (user.approvalStatus === 'PENDING') {
+        navigate('/pending-approval');
+      } else if (user.approvalStatus === 'REJECTED') {
+        navigate('/rejected');
+      } else if (user.role === 'ADMIN') {
+        navigate('/admin/users');
       } else if (user.role === 'INSTRUCTOR') {
         navigate('/instructor');
       } else if (user.role === 'STUDENT') {
@@ -99,13 +105,25 @@ export default function Login() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              className={errors.password ? 'input-error' : ''}
-              disabled={isSubmitting}
-              {...register('password')}
-            />
+            <div className="password-input-wrap">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                className={errors.password ? 'input-error' : ''}
+                disabled={isSubmitting}
+                autoComplete="current-password"
+                {...register('password')}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                disabled={isSubmitting}
+              >
+                <EyeIcon off={showPassword} />
+              </button>
+            </div>
             {errors.password && (
               <span className="field-error">{errors.password.message}</span>
             )}

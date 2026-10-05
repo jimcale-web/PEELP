@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+import EyeIcon from '../components/EyeIcon';
 import '../styles/Register.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -53,7 +55,9 @@ function resolveRegisterError(err: unknown): string {
 
 export default function Register() {
   const [serverError, setServerError] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
   const navigate = useNavigate();
+  const { login, user, isLoading: isAuthLoading } = useAuth();
   const { data: categories = [], isLoading: isLoadingCategories, isError: isCategoriesError } = useQuery({
     queryKey: ['registration', 'categories'],
     queryFn: async (): Promise<Category[]> => {
@@ -86,17 +90,25 @@ export default function Register() {
         },
         { withCredentials: true },
       );
-      navigate('/login', { state: { registered: true } });
+      try {
+        await login(data.email.trim(), data.password);
+        navigate('/pending-approval', { replace: true });
+      } catch {
+        navigate('/login', { state: { registered: true } });
+      }
     } catch (err) {
       setServerError(resolveRegisterError(err));
     }
   };
 
+  if (!isAuthLoading && user) {
+    return <Navigate to={user.approvalStatus === 'PENDING' ? '/pending-approval' : '/'} replace />;
+  }
+
   return (
     <div className="register-container">
       <div className="register-card">
         <h2>Create Account</h2>
-        <p className="register-subtitle">Join PEELP as a student</p>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           {/* Row 1: Name | Phone */}
@@ -201,29 +213,51 @@ export default function Register() {
           <div className="register-fields-row">
             <div className="form-group">
               <label htmlFor="reg-password">Password</label>
-              <input
-                id="reg-password"
-                type="password"
-                className={errors.password ? 'input-error' : ''}
-                placeholder="Min. 8 characters"
-                disabled={isSubmitting}
-                autoComplete="new-password"
-                {...register('password')}
-              />
+              <div className="password-input-wrap">
+                <input
+                  id="reg-password"
+                  type={showPasswords ? 'text' : 'password'}
+                  className={errors.password ? 'input-error' : ''}
+                  placeholder="Min. 8 characters"
+                  disabled={isSubmitting}
+                  autoComplete="new-password"
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPasswords((prev) => !prev)}
+                  aria-label={showPasswords ? 'Hide passwords' : 'Show passwords'}
+                  disabled={isSubmitting}
+                >
+                  <EyeIcon off={showPasswords} />
+                </button>
+              </div>
               {errors.password && <span className="field-error">{errors.password.message}</span>}
             </div>
 
             <div className="form-group">
               <label htmlFor="reg-confirm-password">Confirm Password</label>
-              <input
-                id="reg-confirm-password"
-                type="password"
-                className={errors.confirmPassword ? 'input-error' : ''}
-                placeholder="Repeat password"
-                disabled={isSubmitting}
-                autoComplete="new-password"
-                {...register('confirmPassword')}
-              />
+              <div className="password-input-wrap">
+                <input
+                  id="reg-confirm-password"
+                  type={showPasswords ? 'text' : 'password'}
+                  className={errors.confirmPassword ? 'input-error' : ''}
+                  placeholder="Repeat password"
+                  disabled={isSubmitting}
+                  autoComplete="new-password"
+                  {...register('confirmPassword')}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPasswords((prev) => !prev)}
+                  aria-label={showPasswords ? 'Hide passwords' : 'Show passwords'}
+                  disabled={isSubmitting}
+                >
+                  <EyeIcon off={showPasswords} />
+                </button>
+              </div>
               {errors.confirmPassword && (
                 <span className="field-error">{errors.confirmPassword.message}</span>
               )}

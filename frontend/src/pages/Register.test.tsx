@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Register from './Register';
+import { AuthProvider } from '../contexts/AuthContext';
 import { server } from '../test/server';
 
 const REGISTER_URL = 'http://localhost:5000/api/register';
@@ -26,7 +27,9 @@ function renderRegister() {
   });
   render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </QueryClientProvider>,
   );
   return router;

@@ -1,9 +1,10 @@
-﻿/* Register Page Styles */
+/* Register Page Styles */
 .register-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: radial-gradient(circle at 15% 10%, rgba(56,189,248,0.35) 0, transparent 45%), radial-gradient(circle at 85% 90%, rgba(99,102,241,0.30) 0, transparent 45%), linear-gradient(160deg, #020617 0%, #0f172a 100%);
+  background-attachment: fixed;
   padding: 32px 16px;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -15,7 +16,7 @@
   background: white;
   padding: 36px 40px 32px;
   margin: 2rem;
-  border-radius: 10px;
+  border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 620px;
@@ -29,12 +30,6 @@
   font-weight: 600;
 }
 
-.register-subtitle {
-  text-align: center;
-  color: #888;
-  font-size: 13px;
-  margin: 0 0 24px;
-}
 
 /* Two-column layout for paired fields */
 .register-fields-row {
@@ -70,18 +65,51 @@
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
 
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #0ea5e9;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.password-toggle-btn:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.password-toggle-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 .form-group input:disabled,
@@ -109,17 +137,17 @@
   margin-bottom: 14px;
   padding: 10px;
   background-color: #f8d7da;
-  border-radius: 5px;
+  border-radius: 10px;
   border: 1px solid #f5c6cb;
 }
 
 .register-card button[type='submit'] {
   width: 100%;
   padding: 11px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -129,7 +157,7 @@
 
 .register-card button[type='submit']:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 20px rgba(14, 165, 233, 0.4);
 }
 
 .register-card button[type='submit']:disabled {
@@ -151,11 +179,17 @@
 }
 
 .register-link {
-  color: #667eea;
+  color: #0ea5e9;
   font-weight: 600;
   text-decoration: none;
 }
 
 .register-link:hover {
   text-decoration: underline;
+}
+@media (max-width: 520px) {
+  .register-container { padding: 16px 12px; }
+  .register-card { margin: 0; border-radius: 16px; }
+  .form-group input, .form-group select { font-size: 16px; padding: 13px 12px; }
+  .register-card button[type='submit'] { padding: 14px; }
 }
