@@ -16,6 +16,7 @@ import { coursesRouter } from './routes/courses.js';
 import { sectionsRouter } from './routes/sections.js';
 import { lessonsRouter } from './routes/lessons.js';
 import { categoriesRouter } from './routes/categories.js';
+import { adminReportsRouter } from './routes/admin-reports.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -48,6 +49,7 @@ app.use(coursesRouter);
 app.use(sectionsRouter);
 app.use(lessonsRouter);
 app.use(categoriesRouter);
+app.use(adminReportsRouter);
 
 // Serve the built frontend (single-service Railway deployment).
 const frontendDistDir = path.resolve(__dirname, '../../frontend/dist');

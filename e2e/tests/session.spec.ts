@@ -24,7 +24,7 @@ async function clearSession(page: Page, context: BrowserContext) {
 async function loginAsAdmin(page: Page) {
   await page.goto('/login');
   await page.getByLabel('Email').fill(ADMIN_EMAIL);
-  await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.waitForURL('/admin/users');
 }
@@ -36,20 +36,19 @@ test.describe('Protected routes', () => {
     await clearSession(page, context);
   });
 
-  test('unauthenticated visit to / redirects to /login', async ({ page }) => {
+  test('unauthenticated visitors can access the public home page', async ({ page }) => {
     await page.goto('/');
-    await page.waitForURL('/login');
-    await expect(page).toHaveURL('/login');
-    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { name: /Learn without limits/ })).toBeVisible();
   });
 
-  test('unauthenticated visit to an unknown path redirects to /login', async ({ page }) => {
+  test('unauthenticated visit to an unknown path falls back to the public home page', async ({ page }) => {
     await page.goto('/some/unknown/path');
-    await page.waitForURL('/login');
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { name: /Learn without limits/ })).toBeVisible();
   });
 
-  test('shows loading indicator before the redirect decision', async ({ page }) => {
+  test('shows loading indicator before redirecting an unauthenticated admin-route visit', async ({ page }) => {
     let resolveSessionCheck!: () => void;
     await page.route('**/api/auth/get-session', async (route) => {
       await new Promise<void>((resolve) => { resolveSessionCheck = resolve; });
@@ -57,7 +56,7 @@ test.describe('Protected routes', () => {
     });
 
     const navPromise = page.waitForURL('/login');
-    await page.goto('/');
+    await page.goto('/admin/users');
 
     await expect(page.getByText('Loading...')).toBeVisible();
     resolveSessionCheck();
@@ -73,7 +72,7 @@ test.describe('Protected routes', () => {
 
     await page.goto('/');
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: 'Welcome to PEELP' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Learn without limits/ })).toBeVisible();
   });
 });
 
@@ -185,7 +184,7 @@ test.describe('Logout', () => {
     await page.waitForURL('/login');
 
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await page.waitForURL('/admin/users');
@@ -219,7 +218,7 @@ test.describe('Error handling', () => {
 
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
-    await expect(page.getByLabel('Password')).toBeVisible();
+    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
   });
 
   test.describe('when authenticated', () => {

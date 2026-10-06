@@ -44,7 +44,7 @@ async function createUser(
 
   await m.getByLabel('Full Name').fill(name);
   await m.getByLabel('Email').fill(email);
-  await m.getByLabel('Password').fill(password);
+  await m.getByLabel('Password', { exact: true }).fill(password);
   if (role) await m.getByLabel('Role').selectOption(role);
 
   await m.getByRole('button', { name: 'Create User' }).click();
@@ -91,7 +91,7 @@ test.describe('Create User', () => {
     await expect(m.getByRole('heading', { name: 'Create New User' })).toBeVisible();
     await expect(m.getByLabel('Full Name')).toBeVisible();
     await expect(m.getByLabel('Email')).toBeVisible();
-    await expect(m.getByLabel('Password')).toBeVisible();
+    await expect(m.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(m.getByLabel('Role')).toBeVisible();
   });
 
@@ -232,7 +232,7 @@ test.describe('Edit User', () => {
 
     await page.goto('/login');
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill('NewPass456');
+    await page.getByLabel('Password', { exact: true }).fill('NewPass456');
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL('/student/courses');
     await expect(page).toHaveURL('/student/courses');

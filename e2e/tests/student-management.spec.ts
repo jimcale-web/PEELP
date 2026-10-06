@@ -61,7 +61,7 @@ async function addStudent(
 
   await m.getByLabel('Full Name').fill(name);
   await m.getByLabel('Email').fill(email);
-  await m.getByLabel('Password').fill(password);
+  await m.getByLabel('Password', { exact: true }).fill(password);
   await m.getByLabel('City').fill(city);
   await m.getByLabel('Country').fill(country);
   await m.getByLabel('Phone Number').fill(phone);
@@ -143,7 +143,7 @@ test.describe('Student Management — add student', () => {
     await expect(m.getByRole('heading', { name: 'Add New Student' })).toBeVisible();
     await expect(m.getByLabel('Full Name')).toBeVisible();
     await expect(m.getByLabel('Email')).toBeVisible();
-    await expect(m.getByLabel('Password')).toBeVisible();
+    await expect(m.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(m.getByLabel('City')).toBeVisible();
     await expect(m.getByLabel('Country')).toBeVisible();
     await expect(m.getByLabel('Phone Number')).toBeVisible();
@@ -235,7 +235,7 @@ test.describe('Student Management — add student', () => {
     const m = modal(page);
     await m.getByLabel('Full Name').fill('Second Student');
     await m.getByLabel('Email').fill(email);
-    await m.getByLabel('Password').fill('Password123');
+    await m.getByLabel('Password', { exact: true }).fill('Password123');
     await m.getByLabel('City').fill('Cairo');
     await m.getByLabel('Country').fill('Egypt');
     await m.getByLabel('Phone Number').fill('+20 111 222 333');

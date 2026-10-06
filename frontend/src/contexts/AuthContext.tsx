@@ -64,13 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Login failed: No user data returned');
       }
     } catch (error) {
-      setIsLoading(false);
       if (error instanceof Error) {
         throw error;
       }
       throw new Error('Login failed: ' + String(error));
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const logout = async () => {

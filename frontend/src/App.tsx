@@ -18,6 +18,7 @@ import CategoryList from './pages/admin/CategoryList';
 import Reports from './pages/admin/Reports';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import CourseDetail from './pages/instructor/CourseDetail';
+import CourseReport from './pages/instructor/CourseReport';
 import CourseCatalog from './pages/student/CourseCatalog';
 import LessonPlayer from './pages/student/LessonPlayer';
 import './App.css';
@@ -49,6 +50,14 @@ function App() {
             element={
               <InstructorRoute>
                 <CourseDetail />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/course/:courseId/report"
+            element={
+              <InstructorRoute>
+                <CourseReport />
               </InstructorRoute>
             }
           />

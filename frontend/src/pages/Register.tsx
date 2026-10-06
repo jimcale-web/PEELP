@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
@@ -57,6 +57,9 @@ export default function Register() {
   const [serverError, setServerError] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preferredCategoryId = searchParams.get('categoryId') ?? '';
+  const selectedCourseTitle = searchParams.get('courseTitle');
   const { login, user, isLoading: isAuthLoading } = useAuth();
   const { data: categories = [], isLoading: isLoadingCategories, isError: isCategoriesError } = useQuery({
     queryKey: ['registration', 'categories'],
@@ -69,10 +72,22 @@ export default function Register() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    defaultValues: { categoryId: preferredCategoryId },
   });
+
+  useEffect(() => {
+    if (!preferredCategoryId || categories.length === 0) {
+      return;
+    }
+    const hasPreferredCategory = categories.some((category) => category.id === preferredCategoryId);
+    if (hasPreferredCategory) {
+      setValue('categoryId', preferredCategoryId, { shouldValidate: true });
+    }
+  }, [categories, preferredCategoryId, setValue]);
 
   const onSubmit = async (data: RegisterFormData) => {
     setServerError('');
@@ -109,6 +124,12 @@ export default function Register() {
     <div className="register-container">
       <div className="register-card">
         <h2>Create Account</h2>
+        <p className="register-subtitle">Join PEELP as a student and start learning today.</p>
+        {selectedCourseTitle && (
+          <p className="register-selected-course">
+            Register to enroll in <strong>{selectedCourseTitle}</strong>.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           {/* Row 1: Name | Phone */}

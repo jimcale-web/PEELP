@@ -119,7 +119,7 @@ export default async function globalSetup(config: FullConfig) {
 
   await page.goto('/login');
   await page.getByLabel('Email').fill(adminEmail);
-  await page.getByLabel('Password').fill(adminPassword);
+  await page.getByRole('textbox', { name: 'Password' }).fill(adminPassword);
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.waitForURL('/admin/users');
 

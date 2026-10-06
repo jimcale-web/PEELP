@@ -24,26 +24,27 @@ enum ApprovalStatus {
 }
 
 model User {
-  id               String          @id
-  name             String
-  email            String          @unique
-  emailVerified    Boolean
-  image            String?
-  role             Role            @default(STUDENT)
-  approvalStatus   ApprovalStatus  @default(PENDING)
-  city             String?
-  phoneNumber      String?
-  country          String?
+  id                 String           @id
+  name               String
+  email              String           @unique
+  emailVerified      Boolean
+  image              String?
+  role               Role             @default(STUDENT)
+  approvalStatus     ApprovalStatus   @default(PENDING)
+  city               String?
+  phoneNumber        String?
+  country            String?
   enrolledCategoryId String?
-  enrolledCategory Category? @relation("StudentEnrollmentCategory", fields: [enrolledCategoryId], references: [id], onDelete: SetNull)
-  accessDuration   AccessDuration?
-  accessExpiresAt  DateTime?
-  deletedAt        DateTime?
-  createdAt        DateTime
-  updatedAt        DateTime
-  sessions         Session[]
-  accounts         Account[]
-  courses          Course[]
+  enrolledCategory   Category?        @relation("StudentEnrollmentCategory", fields: [enrolledCategoryId], references: [id], onDelete: SetNull)
+  accessDuration     AccessDuration?
+  accessExpiresAt    DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime
+  updatedAt          DateTime
+  sessions           Session[]
+  accounts           Account[]
+  courses            Course[]
+  lessonProgress     LessonProgress[]
 
   @@map("user")
 }
@@ -125,13 +126,14 @@ model Section {
 }
 
 model Lesson {
-  id          String    @id
+  id          String           @id
   title       String
   description String?
   sectionId   String
-  section     Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  order       Int       @default(0)
+  section     Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  order       Int              @default(0)
   resources   Resource[]
+  progress    LessonProgress[]
   createdAt   DateTime
   updatedAt   DateTime
   deletedAt   DateTime?
@@ -154,15 +156,30 @@ model Resource {
   @@map("resource")
 }
 
-model Category {
-  id          String    @id
-  name        String    @unique
-  description String?
+model LessonProgress {
+  id          String   @id
+  studentId   String
+  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime
   createdAt   DateTime
   updatedAt   DateTime
-  deletedAt   DateTime?
-  courses     Course[]
-  enrolledStudents User[] @relation("StudentEnrollmentCategory")
+
+  @@unique([studentId, lessonId])
+  @@index([lessonId])
+  @@map("lesson_progress")
+}
+
+model Category {
+  id               String    @id
+  name             String    @unique
+  description      String?
+  createdAt        DateTime
+  updatedAt        DateTime
+  deletedAt        DateTime?
+  courses          Course[]
+  enrolledStudents User[]    @relation("StudentEnrollmentCategory")
 
   @@map("category")
 }

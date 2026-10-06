@@ -101,6 +101,7 @@ export const mockStudentCourses = [
 ];
 
 export const handlers = [
+  http.get('http://localhost:5000/api/auth/get-session', () => HttpResponse.json({ user: null })),
   http.get(USERS_URL, () => HttpResponse.json({ users: mockUsers })),
   http.get(CATEGORIES_URL, () => HttpResponse.json({ categories: mockCategories })),
   http.get(PUBLIC_CATEGORIES_URL, () => HttpResponse.json({ categories: mockCategories })),

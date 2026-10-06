@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import CourseCatalog from './CourseCatalog';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { server, STUDENT_COURSES_URL } from '../../test/server';
 
 function renderCourseCatalog() {
@@ -15,7 +16,9 @@ function renderCourseCatalog() {
   return render(
     <MemoryRouter>
       <QueryClientProvider client={queryClient}>
-        <CourseCatalog />
+        <AuthProvider>
+          <CourseCatalog />
+        </AuthProvider>
       </QueryClientProvider>
     </MemoryRouter>,
   );
@@ -73,5 +76,16 @@ describe('CourseCatalog', () => {
     renderCourseCatalog();
 
     expect(await screen.findByText(/unable to load courses/i)).toBeInTheDocument();
+  });
+
+  it('sends visitors to registration with the selected course defaults', async () => {
+    renderCourseCatalog();
+
+    const pythonCourseLink = await screen.findByRole('link', { name: /introduction to python/i });
+    expect(pythonCourseLink).toHaveAttribute(
+      'href',
+      '/register?courseId=course-1&categoryId=cat-1&courseTitle=Introduction%20to%20Python',
+    );
+    expect(screen.queryByRole('link', { name: 'Sign in to enroll' })).not.toBeInTheDocument();
   });
 });

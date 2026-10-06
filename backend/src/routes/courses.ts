@@ -246,6 +246,112 @@ coursesRouter.get('/api/instructor/courses/:courseId', requireAuth, requireInstr
   res.json({ course });
 }));
 
+// Instructor: report course enrollment and lesson completion performance.
+coursesRouter.get('/api/instructor/courses/:courseId/report', requireAuth, requireInstructor, asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+  const course = await prisma.course.findFirst({
+    where: {
+      id: courseId,
+      deletedAt: null,
+      ...(req.user?.role === 'ADMIN' ? {} : { instructorId: req.user!.id }),
+    },
+    select: {
+      id: true,
+      title: true,
+      categoryId: true,
+      sections: {
+        where: { deletedAt: null },
+        orderBy: { order: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          lessons: {
+            where: { deletedAt: null },
+            orderBy: { order: 'asc' },
+            select: { id: true, title: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!course) {
+    res.status(404).json({ error: 'Course not found.' });
+    return;
+  }
+
+  const now = new Date();
+  const enrolledStudents = course.categoryId
+    ? await prisma.user.findMany({
+        where: {
+          role: 'STUDENT',
+          approvalStatus: 'APPROVED',
+          deletedAt: null,
+          enrolledCategoryId: course.categoryId,
+          accessExpiresAt: { gt: now },
+        },
+        select: { id: true },
+      })
+    : [];
+  const lessonIds = course.sections.flatMap((section) => section.lessons.map((lesson) => lesson.id));
+  const progressByStudentAndLesson = enrolledStudents.length > 0 && lessonIds.length > 0
+    ? await prisma.lessonProgress.groupBy({
+        by: ['studentId', 'lessonId'],
+        where: {
+          studentId: { in: enrolledStudents.map((student) => student.id) },
+          lessonId: { in: lessonIds },
+        },
+        _count: { _all: true },
+      })
+    : [];
+
+  const lessonsCompletedByStudent = new Map<string, number>();
+  const completionsByLesson = new Map<string, number>();
+  for (const progress of progressByStudentAndLesson) {
+    lessonsCompletedByStudent.set(
+      progress.studentId,
+      (lessonsCompletedByStudent.get(progress.studentId) ?? 0) + 1,
+    );
+    completionsByLesson.set(
+      progress.lessonId,
+      (completionsByLesson.get(progress.lessonId) ?? 0) + progress._count._all,
+    );
+  }
+
+  const completedLearners = lessonIds.length === 0
+    ? 0
+    : [...lessonsCompletedByStudent.values()].filter((count) => count === lessonIds.length).length;
+  const enrollmentCount = enrolledStudents.length;
+  const totalExpectedCompletions = enrollmentCount * lessonIds.length;
+  const totalLessonCompletions = progressByStudentAndLesson.reduce((total, progress) => total + progress._count._all, 0);
+
+  res.json({
+    course: { id: course.id, title: course.title },
+    enrollmentCount,
+    completedLearners,
+    completionRate: enrollmentCount > 0 ? Math.round((completedLearners / enrollmentCount) * 100) : 0,
+    lessonCount: lessonIds.length,
+    averageProgressRate: totalExpectedCompletions > 0
+      ? Math.round((totalLessonCompletions / totalExpectedCompletions) * 100)
+      : 0,
+    sections: course.sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      lessons: section.lessons.map((lesson) => {
+        const completedCount = completionsByLesson.get(lesson.id) ?? 0;
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          completedCount,
+          completionRate: enrollmentCount > 0
+            ? Math.round((completedCount / enrollmentCount) * 100)
+            : 0,
+        };
+      }),
+    })),
+  });
+}));
+
 coursesRouter.post('/api/instructor/courses', requireAuth, requireInstructor, uploadThumbnail.single('thumbnail'), asyncHandler(async (req, res) => {
   const parsed = courseSchema.safeParse(req.body);
   if (!parsed.success) {

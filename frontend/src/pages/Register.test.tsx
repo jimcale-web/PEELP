@@ -14,13 +14,13 @@ const REGISTER_URL = 'http://localhost:5000/api/register';
  * Render Register inside a memory router so Link / useNavigate work without
  * a real browser. We also add a /login stub so navigation assertions are easy.
  */
-function renderRegister() {
+function renderRegister(initialEntry = '/register') {
   const router = createMemoryRouter(
     [
       { path: '/register', element: <Register /> },
       { path: '/login', element: <div data-testid="login-page">Login</div> },
     ],
-    { initialEntries: ['/register'] },
+    { initialEntries: [initialEntry] },
   );
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -87,6 +87,14 @@ describe('Register', () => {
       expect(screen.queryByText(/please enter/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/must be/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/don't match/i)).not.toBeInTheDocument();
+    });
+
+    it('prefills category and selected course details from the URL', async () => {
+      renderRegister('/register?courseId=course-1&categoryId=cat-1&courseTitle=Introduction%20to%20Python');
+      await screen.findByRole('option', { name: 'Programming' });
+      expect(screen.getByLabelText('Category to enroll in')).toHaveValue('cat-1');
+      expect(screen.getByText(/register to enroll in/i)).toBeInTheDocument();
+      expect(screen.getByText('Introduction to Python')).toBeInTheDocument();
     });
   });
 

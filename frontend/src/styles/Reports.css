@@ -46,6 +46,28 @@
   box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
 }
 
+.export-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.report-state,
+.report-empty {
+  padding: 16px;
+  border-radius: 12px;
+  background: #fff;
+  color: #475569;
+}
+
+.report-state--error {
+  color: #b91c1c;
+}
+
+.report-empty {
+  margin: 0;
+  background: #f8fafc;
+}
+
 .overview-grid {
   display: grid;
   gap: 18px;

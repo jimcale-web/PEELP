@@ -1,10 +1,42 @@
+import { useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import '../styles/ApprovalWall.css';
 
+const POLL_INTERVAL_MS = 10000;
+
+function homePathFor(role?: string) {
+  if (role === 'ADMIN') return '/admin/users';
+  if (role === 'INSTRUCTOR') return '/instructor';
+  return '/student/courses';
+}
+
 export default function PendingApproval() {
-  const { logout } = useAuth();
+  const { logout, user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const isWaiting = !!user && user.approvalStatus !== 'APPROVED';
+
+  useEffect(() => {
+    if (!isWaiting) return;
+    const check = async () => {
+      try {
+        await api.get('/me');
+        window.location.assign(homePathFor(user?.role));
+      } catch (err) {
+        const code = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+        if (code === 'REJECTED') navigate('/rejected', { replace: true });
+      }
+    };
+    const timer = window.setInterval(check, POLL_INTERVAL_MS);
+    check();
+    return () => window.clearInterval(timer);
+  }, [isWaiting, user?.role, navigate]);
+
+  if (!isLoading && !user) return <Navigate to="/login" replace />;
+  if (!isLoading && user && user.approvalStatus === 'APPROVED') {
+    return <Navigate to={homePathFor(user.role)} replace />;
+  }
 
   async function handleLogout() {
     await logout();

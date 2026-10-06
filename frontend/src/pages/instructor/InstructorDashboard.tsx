@@ -240,6 +240,7 @@ export default function InstructorDashboard() {
                 <th>Course</th>
                 <th>Category</th>
                 <th>Created</th>
+                <th>Reports</th>
               </tr>
             </thead>
             <tbody>
@@ -262,6 +263,18 @@ export default function InstructorDashboard() {
                   </td>
                   <td>{course.category?.name ?? 'Uncategorized'}</td>
                   <td>{new Date(course.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="instructor-report-btn"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        navigate(`/instructor/course/${course.id}/report`);
+                      }}
+                    >
+                      View Report
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

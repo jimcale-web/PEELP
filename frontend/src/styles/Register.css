@@ -30,6 +30,18 @@
   font-weight: 600;
 }
 
+.register-subtitle {
+  margin: 0 0 16px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.register-selected-course {
+  margin: 0 0 18px;
+  color: #4b5563;
+  text-align: center;
+}
+
 
 /* Two-column layout for paired fields */
 .register-fields-row {

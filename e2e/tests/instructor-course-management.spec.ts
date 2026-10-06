@@ -72,7 +72,7 @@ async function createInstructorAccount(page: Page) {
   const modal = page.locator('.modal-card');
   await modal.getByLabel('Full Name').fill('E2E Instructor');
   await modal.getByLabel('Email').fill(email);
-  await modal.getByLabel('Password').fill(password);
+  await modal.getByLabel('Password', { exact: true }).fill(password);
   await modal.getByLabel('Role').selectOption('INSTRUCTOR');
   await modal.getByRole('button', { name: 'Create User' }).click();
   await expect(modal).not.toBeVisible();
@@ -114,7 +114,7 @@ async function createLesson(section: ReturnType<typeof sectionItem>, opts: { tit
 async function loginAsAdmin(page: Page) {
   await page.goto('/login');
   await page.getByLabel('Email').fill(ADMIN_EMAIL);
-  await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Sign In' }).click();
   await expect(page).toHaveURL('/admin/users');
 }
@@ -132,7 +132,7 @@ test.describe('Instructor Dashboard', () => {
     await page.getByRole('button', { name: 'Sign Out' }).click();
     await expect(page).toHaveURL('/login');
     await page.getByLabel('Email').fill(instructor.email);
-    await page.getByLabel('Password').fill(instructor.password);
+    await page.getByLabel('Password', { exact: true }).fill(instructor.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/instructor');
 

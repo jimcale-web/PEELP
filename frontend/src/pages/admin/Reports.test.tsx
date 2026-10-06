@@ -1,285 +1,112 @@
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, it, expect } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { http, HttpResponse } from 'msw';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import Reports from './Reports';
+import { API_URL } from '../../services/api';
+import { server } from '../../test/server';
+
+const REPORT_URL = `${API_URL}/admin/reports`;
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+const reportData = {
+  summary: {
+    totalUsers: 18,
+    totalStudents: 12,
+    totalInstructors: 4,
+    pendingApprovals: 2,
+    totalCourses: 3,
+    completionRate: 50,
+  },
+  monthlyActivity: [
+    { month: 'May 2026', newUsers: 1, newCourses: 0 },
+    { month: 'Jun 2026', newUsers: 2, newCourses: 1 },
+  ],
+  categoryDistribution: [
+    { name: 'Programming', students: 8 },
+    { name: 'Design', students: 4 },
+  ],
+  coursePerformance: [
+    { id: 'course-1', title: 'Intro to TypeScript', learnersStarted: 6, completionRate: 50 },
+    { id: 'course-2', title: 'Design Basics', learnersStarted: 2, completionRate: 100 },
+  ],
+};
 
 function renderReports() {
-  return render(<Reports />);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Reports />
+    </QueryClientProvider>,
+  );
 }
 
 describe('Reports', () => {
-  describe('page header', () => {
-    it('renders the page title', () => {
-      renderReports();
-      expect(screen.getByText('Reports dashboard')).toBeInTheDocument();
-    });
-
-    it('renders the page subtitle', () => {
-      renderReports();
-      expect(screen.getByText('Performance overview')).toBeInTheDocument();
-    });
-
-    it('renders the export button', () => {
-      renderReports();
-      const exportButton = screen.getByRole('button', { name: /export report/i });
-      expect(exportButton).toBeInTheDocument();
-    });
+  it('shows loading while fetching current report data', () => {
+    server.use(http.get(REPORT_URL, () => new Promise(() => {})));
+    renderReports();
+    expect(screen.getByRole('status')).toHaveTextContent(/loading report data/i);
   });
 
-  describe('overview metrics', () => {
-    it('renders all overview stat cards', () => {
-      renderReports();
-      const overviewSection = screen.getByLabelText('Key platform metrics');
-      expect(within(overviewSection).getByText('Total users')).toBeInTheDocument();
-      expect(within(overviewSection).getByText('Enrollments')).toBeInTheDocument();
-      expect(within(overviewSection).getByText('Revenue')).toBeInTheDocument();
-      expect(within(overviewSection).getByText('Completion rate')).toBeInTheDocument();
-    });
+  it('renders live summary metrics, category data, and course performance', async () => {
+    server.use(http.get(REPORT_URL, () => HttpResponse.json(reportData)));
+    renderReports();
 
-    it('displays stat values correctly', () => {
-      renderReports();
-      expect(screen.getByText('24.8K')).toBeInTheDocument();
-      expect(screen.getByText('8.6K')).toBeInTheDocument();
-      expect(screen.getByText('$94.2K')).toBeInTheDocument();
-      const completionCard = screen.getAllByText(/81%/)[0];
-      expect(completionCard).toBeInTheDocument();
-    });
+    const overview = await screen.findByLabelText('Key platform metrics');
+    expect(within(overview).getByText('18')).toBeInTheDocument();
+    expect(within(overview).getByText('3')).toBeInTheDocument();
+    expect(within(overview).getByText('2')).toBeInTheDocument();
+    expect(within(overview).getByText('50%')).toBeInTheDocument();
+    expect(screen.getByText('New users and courses')).toBeInTheDocument();
+    expect(screen.getByText('Students by category')).toBeInTheDocument();
+    expect(screen.getByText('Programming')).toBeInTheDocument();
+    expect(screen.getByText('8')).toBeInTheDocument();
 
-    it('displays stat changes correctly', () => {
-      renderReports();
-      expect(screen.getByText('+12.4%')).toBeInTheDocument();
-      expect(screen.getByText('+8.1%')).toBeInTheDocument();
-      expect(screen.getByText('+15.7%')).toBeInTheDocument();
-      expect(screen.getByText('+4.2%')).toBeInTheDocument();
-    });
-
-    it('applies correct CSS classes to metric cards', () => {
-      renderReports();
-      const metricCards = document.querySelectorAll('[class*="metric-card"]');
-      expect(metricCards.length).toBe(4);
-      expect(metricCards[0]).toHaveClass('metric-card--blue');
-      expect(metricCards[1]).toHaveClass('metric-card--purple');
-      expect(metricCards[2]).toHaveClass('metric-card--green');
-      expect(metricCards[3]).toHaveClass('metric-card--orange');
-    });
+    const table = document.querySelector<HTMLElement>('.table-panel table');
+    expect(table).toBeInTheDocument();
+    expect(within(table!).getByText('Intro to TypeScript')).toBeInTheDocument();
+    expect(within(table!).getByText('Design Basics')).toBeInTheDocument();
+    expect(within(table!).getByText('6')).toBeInTheDocument();
+    expect(within(table!).getByText('100%')).toBeInTheDocument();
   });
 
-  describe('monthly performance chart', () => {
-    it('renders the revenue section header', () => {
-      renderReports();
-      const chartSections = screen.getAllByText('Revenue');
-      expect(chartSections.length).toBeGreaterThan(0);
-      expect(screen.getByText('Monthly performance')).toBeInTheDocument();
-    });
-
-    it('renders the area chart with revenue data', () => {
-      renderReports();
-      const areaChart = document.querySelector('.chart-wrap');
-      expect(areaChart).toBeInTheDocument();
-      expect(areaChart).toHaveClass('chart-wrap');
-    });
-
-    it('renders chart containing revenue and target data', () => {
-      renderReports();
-      const chartWrap = document.querySelector('.chart-wrap');
-      expect(chartWrap).toBeInTheDocument();
-      // Verify the chart container exists and has proper structure
-      const responsiveContainer = chartWrap?.querySelector('div');
-      expect(responsiveContainer).toBeInTheDocument();
-    });
+  it('shows an explicit error when the report request fails', async () => {
+    server.use(http.get(REPORT_URL, () => HttpResponse.json({}, { status: 500 })));
+    renderReports();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/failed to load report data/i);
   });
 
-  describe('subscriptions pie chart', () => {
-    it('renders the subscriptions section header', () => {
-      renderReports();
-      expect(screen.getByText('Customer mix')).toBeInTheDocument();
-      expect(screen.getByText('Subscriptions')).toBeInTheDocument();
-    });
+  it('shows empty states when the database has no course or category data', async () => {
+    server.use(http.get(REPORT_URL, () => HttpResponse.json({
+      ...reportData,
+      categoryDistribution: [],
+      coursePerformance: [],
+    })));
+    renderReports();
 
-    it('displays all subscription types in the legend', () => {
-      renderReports();
-      expect(screen.getByText('Monthly')).toBeInTheDocument();
-      expect(screen.getByText('Quarterly')).toBeInTheDocument();
-      expect(screen.getByText('Annual')).toBeInTheDocument();
-      expect(screen.getByText('Category')).toBeInTheDocument();
-    });
-
-    it('displays subscription percentages correctly', () => {
-      renderReports();
-      const legendItems = document.querySelectorAll('.legend-item');
-      expect(legendItems.length).toBe(4);
-      
-      const percentages = screen.getAllByText(/\d+%/);
-      expect(percentages.some(el => el.textContent === '42%')).toBe(true);
-      expect(percentages.some(el => el.textContent === '27%')).toBe(true);
-      expect(percentages.some(el => el.textContent === '23%')).toBe(true);
-      expect(percentages.some(el => el.textContent === '8%')).toBe(true);
-    });
-
-    it('applies correct colors to legend swatches', () => {
-      renderReports();
-      const legendSwatches = document.querySelectorAll('.legend-swatch');
-      expect(legendSwatches.length).toBe(4);
-      expect(legendSwatches[0]).toHaveStyle({ backgroundColor: '#667eea' });
-      expect(legendSwatches[1]).toHaveStyle({ backgroundColor: '#8b5cf6' });
-      expect(legendSwatches[2]).toHaveStyle({ backgroundColor: '#22c55e' });
-      expect(legendSwatches[3]).toHaveStyle({ backgroundColor: '#f59e0b' });
-    });
+    expect(await screen.findByText(/no category enrollment data yet/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/no course data yet/i)).toHaveLength(2);
   });
 
-  describe('course completion chart', () => {
-    it('renders the learner progress section header', () => {
-      renderReports();
-      expect(screen.getByText('Learner progress')).toBeInTheDocument();
-      expect(screen.getByText('Course completion by track')).toBeInTheDocument();
-    });
+  it('provides a working report export action after data loads', async () => {
+    server.use(http.get(REPORT_URL, () => HttpResponse.json(reportData)));
+    renderReports();
+    await screen.findByText('New users and courses');
 
-    it('renders bar chart for course completion', () => {
-      renderReports();
-      const chartWrap = document.querySelectorAll('.chart-wrap')[1];
-      expect(chartWrap).toBeInTheDocument();
-      // Verify the chart container is properly structured
-      const responsiveContainer = chartWrap?.querySelector('div');
-      expect(responsiveContainer).toBeInTheDocument();
-    });
-  });
+    const createObjectURL = vi.fn(() => 'blob:report');
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL: vi.fn() });
 
-  describe('top courses table', () => {
-    it('renders the top courses section header', () => {
-      renderReports();
-      expect(screen.getByText('Top courses')).toBeInTheDocument();
-      expect(screen.getByText('Performance snapshot')).toBeInTheDocument();
-    });
-
-    it('displays all table headers', () => {
-      renderReports();
-      const thead = document.querySelector<HTMLElement>('.table-panel thead');
-      expect(within(thead!).getByText('Course')).toBeInTheDocument();
-      expect(within(thead!).getByText('Enrollments')).toBeInTheDocument();
-      expect(within(thead!).getByText('Completion')).toBeInTheDocument();
-      expect(within(thead!).getByText('Revenue')).toBeInTheDocument();
-    });
-
-    it('renders all course rows', () => {
-      renderReports();
-      expect(screen.getByText('English Communication')).toBeInTheDocument();
-      expect(screen.getByText('Web Fundamentals')).toBeInTheDocument();
-      expect(screen.getByText('Digital Marketing')).toBeInTheDocument();
-      expect(screen.getByText('Data Analytics')).toBeInTheDocument();
-    });
-
-    it('displays correct enrollment numbers', () => {
-      renderReports();
-      const tbody = document.querySelector('.table-panel tbody');
-      const rows = tbody!.querySelectorAll<HTMLElement>('tr');
-      
-      expect(rows.length).toBe(4);
-      expect(within(rows[0]).getByText('146')).toBeInTheDocument();
-      expect(within(rows[1]).getByText('128')).toBeInTheDocument();
-      expect(within(rows[2]).getByText('119')).toBeInTheDocument();
-      expect(within(rows[3]).getByText('102')).toBeInTheDocument();
-    });
-
-    it('displays correct completion percentages', () => {
-      renderReports();
-      const tbody = document.querySelector<HTMLElement>('.table-panel tbody');
-      expect(within(tbody!).getByText('82%')).toBeInTheDocument();
-      expect(within(tbody!).getByText('76%')).toBeInTheDocument();
-      expect(within(tbody!).getByText('74%')).toBeInTheDocument();
-      expect(within(tbody!).getByText('81%')).toBeInTheDocument();
-    });
-
-    it('displays correct revenue values', () => {
-      renderReports();
-      const tbody = document.querySelector<HTMLElement>('.table-panel tbody');
-      expect(within(tbody!).getByText('$18.4K')).toBeInTheDocument();
-      expect(within(tbody!).getByText('$15.1K')).toBeInTheDocument();
-      expect(within(tbody!).getByText('$13.9K')).toBeInTheDocument();
-      expect(within(tbody!).getByText('$12.6K')).toBeInTheDocument();
-    });
-  });
-
-  describe('course activity chart', () => {
-    it('renders the course activity section header', () => {
-      renderReports();
-      const courseActivityHeaders = document.querySelectorAll('.panel-header');
-      expect(courseActivityHeaders.length).toBeGreaterThan(0);
-      expect(screen.getByText('Course activity')).toBeInTheDocument();
-      expect(screen.getByText('Enrollment by program')).toBeInTheDocument();
-    });
-
-    it('renders bar chart for course performance data', () => {
-      renderReports();
-      const tallChart = document.querySelector('.tall-chart');
-      expect(tallChart).toBeInTheDocument();
-    });
-  });
-
-  describe('accessibility', () => {
-    it('has an aria-label on the overview stats section', () => {
-      renderReports();
-      const overviewSection = screen.getByLabelText('Key platform metrics');
-      expect(overviewSection).toBeInTheDocument();
-    });
-
-    it('renders semantic HTML with article elements', () => {
-      renderReports();
-      const articles = document.querySelectorAll('article');
-      expect(articles.length).toBeGreaterThan(0);
-    });
-
-    it('renders a table with proper semantic structure', () => {
-      renderReports();
-      const table = document.querySelector('.table-panel table');
-      expect(table).toBeInTheDocument();
-      expect(table?.querySelector('thead')).toBeInTheDocument();
-      expect(table?.querySelector('tbody')).toBeInTheDocument();
-    });
-  });
-
-  describe('styling', () => {
-    it('applies the reports-page class to the root container', () => {
-      renderReports();
-      const container = document.querySelector('.reports-page');
-      expect(container).toBeInTheDocument();
-    });
-
-    it('applies reports-header class to the header section', () => {
-      renderReports();
-      const header = document.querySelector('.reports-header');
-      expect(header).toBeInTheDocument();
-    });
-
-    it('applies overview-grid class to the metrics section', () => {
-      renderReports();
-      const gridSection = document.querySelector('.overview-grid');
-      expect(gridSection).toBeInTheDocument();
-    });
-
-    it('applies chart-grid class to the charts section', () => {
-      renderReports();
-      const chartSection = document.querySelector('.chart-grid');
-      expect(chartSection).toBeInTheDocument();
-    });
-
-    it('marks panels with the correct class', () => {
-      renderReports();
-      const allPanels = document.querySelectorAll('.panel');
-      expect(allPanels.length).toBeGreaterThan(0);
-      
-      const widePanels = document.querySelectorAll('.panel--wide');
-      expect(widePanels.length).toBeGreaterThanOrEqual(2);
-    });
-  });
-
-  describe('interactivity', () => {
-    it('export button is clickable', async () => {
-      renderReports();
-      const exportButton = screen.getByRole('button', { name: /export report/i });
-      const user = userEvent.setup();
-      
-      await user.click(exportButton);
-      expect(exportButton).toBeInTheDocument();
-    });
+    const exportButton = await screen.findByRole('button', { name: /export report/i });
+    expect(exportButton).toBeEnabled();
+    exportButton.click();
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(click).toHaveBeenCalled();
   });
 });

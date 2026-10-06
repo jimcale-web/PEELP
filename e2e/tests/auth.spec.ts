@@ -14,7 +14,7 @@ test.describe('Login page', () => {
   test('renders the login form', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
-    await expect(page.getByLabel('Password')).toBeVisible();
+    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();
     await expect(page.getByText('Contact your administrator if you need access.')).toBeVisible();
   });
@@ -27,7 +27,7 @@ test.describe('Login page', () => {
 
   test('shows validation error for invalid email format', async ({ page }) => {
     await page.getByLabel('Email').fill('not-an-email');
-    await page.getByLabel('Password').fill('somepassword');
+    await page.getByLabel('Password', { exact: true }).fill('somepassword');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await expect(page.getByText('Please enter a valid email address.')).toBeVisible();
@@ -49,7 +49,7 @@ test.describe('Login page', () => {
 
   test('whitespace-only email fails email validation', async ({ page }) => {
     await page.getByLabel('Email').fill('   ');
-    await page.getByLabel('Password').fill('somepassword');
+    await page.getByLabel('Password', { exact: true }).fill('somepassword');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await expect(page.getByText('Please enter a valid email address.')).toBeVisible();
@@ -64,8 +64,8 @@ test.describe('Login page', () => {
     );
 
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
-    await page.getByLabel('Password').press('Enter');
+    await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
+    await page.getByLabel('Password', { exact: true }).press('Enter');
 
     // The server error (mocked 400) proves the request was submitted via keyboard
     await expect(page.locator('.error-message')).toBeVisible();
@@ -86,14 +86,14 @@ test.describe('Login page', () => {
     });
 
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await handlerReady;
 
     await expect(page.getByRole('button', { name: 'Signing in...' })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeDisabled();
-    await expect(page.getByLabel('Password')).toBeDisabled();
+    await expect(page.getByLabel('Password', { exact: true })).toBeDisabled();
 
     resolveRoute();
   });
@@ -106,7 +106,7 @@ test.describe('Login page', () => {
     );
 
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill('wrongpassword');
+    await page.getByLabel('Password', { exact: true }).fill('wrongpassword');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await expect(page.locator('.error-message')).toBeVisible();
@@ -118,7 +118,7 @@ test.describe('Login page', () => {
     );
 
     await page.getByLabel('Email').fill('nobody@example.com');
-    await page.getByLabel('Password').fill('password123');
+    await page.getByLabel('Password', { exact: true }).fill('password123');
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await expect(page.locator('.error-message')).toBeVisible();
@@ -134,7 +134,7 @@ test.describe('Login page', () => {
     );
 
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await expect(page.locator('.error-message')).toBeVisible();
@@ -144,7 +144,7 @@ test.describe('Login page', () => {
 
   test('redirects to the admin dashboard after successful login', async ({ page }) => {
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await page.waitForURL('/admin/users');
@@ -163,11 +163,11 @@ test.describe('Login page', () => {
     });
 
     await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill('wrongpassword');
+    await page.getByLabel('Password', { exact: true }).fill('wrongpassword');
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page.locator('.error-message')).toBeVisible();
 
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     await page.waitForURL('/admin/users');

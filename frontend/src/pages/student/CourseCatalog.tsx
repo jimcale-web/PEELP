@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../../contexts/AuthContext';
 import api, { API_ORIGIN } from '../../services/api';
 import '../../styles/StudentCourseCatalog.css';
 
@@ -50,7 +51,7 @@ function CourseThumbnail({ course }: { course: StudentCourse }) {
 }
 
 export default function CourseCatalog() {
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const { data: courses = [], isLoading, isError } = useQuery({
     queryKey: ['student', 'courses'],
@@ -105,32 +106,30 @@ export default function CourseCatalog() {
         ) : (
           <section className="student-course-grid" aria-label="Available courses">
             {filteredCourses.map((course) => (
-              <article
-                className="student-course-card"
-                key={course.id}
-                onClick={() => navigate(`/student/course/${course.id}`)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    navigate(`/student/course/${course.id}`);
+              <article className="student-course-card" key={course.id}>
+                <Link
+                  className="student-course-card__link"
+                  to={
+                    user
+                      ? `/student/course/${course.id}`
+                      : `/register?courseId=${encodeURIComponent(course.id)}&categoryId=${encodeURIComponent(course.category?.id ?? '')}&courseTitle=${encodeURIComponent(course.title)}`
                   }
-                }}
-              >
-                <CourseThumbnail course={course} />
-                <div className="student-course-card__content">
-                  <div className="student-course-card__category">
-                    {course.category?.name ?? 'General'}
+                >
+                  <CourseThumbnail course={course} />
+                  <div className="student-course-card__content">
+                    <div className="student-course-card__category">
+                      {course.category?.name ?? 'General'}
+                    </div>
+                    <h2>{course.title}</h2>
+                    <p className="student-course-card__description">
+                      {course.description ?? 'Course details will be available soon.'}
+                    </p>
+                    <footer className="student-course-card__footer">
+                      <span>{course.instructor?.name ?? 'PEELP instructor'}</span>
+                      <span>{course._count.sections} {course._count.sections === 1 ? 'section' : 'sections'}</span>
+                    </footer>
                   </div>
-                  <h2>{course.title}</h2>
-                  <p className="student-course-card__description">
-                    {course.description ?? 'Course details will be available soon.'}
-                  </p>
-                  <footer className="student-course-card__footer">
-                    <span>{course.instructor?.name ?? 'PEELP instructor'}</span>
-                    <span>{course._count.sections} {course._count.sections === 1 ? 'section' : 'sections'}</span>
-                  </footer>
-                </div>
+                </Link>
               </article>
             ))}
           </section>

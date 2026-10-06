@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import {
-  ArrowLeft,
+  AlertCircle,
+  BookOpen,
+  CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ExternalLink,
   FileText,
   Link2,
+  Loader2,
   Lock,
   Menu,
   Video,
@@ -77,6 +82,13 @@ interface StudentSection {
   lessons: StudentLesson[];
 }
 
+interface StudentCourseSections {
+  sections: StudentSection[];
+  hasAccess: boolean;
+  canTrackProgress: boolean;
+  completedLessonIds: string[];
+}
+
 interface StudentCourse {
   id: string;
   title: string;
@@ -90,18 +102,21 @@ async function fetchCourse(courseId: string): Promise<{ course: StudentCourse; h
   return res.data;
 }
 
-async function fetchSections(courseId: string): Promise<{ sections: StudentSection[]; hasAccess: boolean }> {
-  const res = await api.get<{ sections: StudentSection[]; hasAccess: boolean }>(`/student/courses/${courseId}/sections`);
+async function fetchSections(courseId: string): Promise<StudentCourseSections> {
+  const res = await api.get<StudentCourseSections>(`/student/courses/${courseId}/sections`);
   return res.data;
 }
 
 export default function LessonPlayer() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [progressSaving, setProgressSaving] = useState(false);
+  const [progressError, setProgressError] = useState('');
 
   const {
     data: courseData,
@@ -125,6 +140,8 @@ export default function LessonPlayer() {
 
   const sections = useMemo(() => sectionsData?.sections ?? [], [sectionsData]);
   const hasAccess = sectionsData?.hasAccess ?? courseData?.hasAccess ?? false;
+  const completedLessonIds = new Set(sectionsData?.completedLessonIds ?? []);
+  const canTrackProgress = sectionsData?.canTrackProgress ?? false;
 
   // Remember the last course a student viewed so the navbar's "Course Player"
   // link can take them straight back into it.
@@ -138,16 +155,79 @@ export default function LessonPlayer() {
     () => sections.flatMap((section) => section.lessons.map((lesson) => ({ ...lesson, sectionTitle: section.title }))),
     [sections],
   );
+  const allVideos = useMemo(
+    () => allLessons.flatMap((lesson) =>
+      lesson.resources
+        .filter((resource) => resource.type === 'VIDEO')
+        .map((resource) => ({ lesson, resource })),
+    ),
+    [allLessons],
+  );
+  const completedLessonCount = allLessons.filter((lesson) => completedLessonIds.has(lesson.id)).length;
 
   const activeLesson = useMemo(
     () => allLessons.find((lesson) => lesson.id === activeLessonId) ?? null,
     [allLessons, activeLessonId],
   );
+  const activeLessonIsLocked = !!activeLesson
+    && activeLesson.resources.length > 0
+    && activeLesson.resources.every((resource) => resource.locked);
 
   const activeResource = useMemo(
     () => activeLesson?.resources.find((resource) => resource.id === activeResourceId) ?? null,
     [activeLesson, activeResourceId],
   );
+  const activeVideoIndex = allVideos.findIndex(
+    ({ lesson, resource }) => lesson.id === activeLessonId && resource.id === activeResourceId,
+  );
+
+  const handleSelectVideo = (index: number) => {
+    const video = allVideos[index];
+    if (!video) {
+      return;
+    }
+    setActiveLessonId(video.lesson.id);
+    setActiveResourceId(video.resource.id);
+    setIsSidebarOpen(false);
+  };
+
+  const handleToggleLessonCompletion = async () => {
+    if (!courseId || !activeLesson || !canTrackProgress || progressSaving) {
+      return;
+    }
+
+    const completed = !completedLessonIds.has(activeLesson.id);
+    setProgressSaving(true);
+    setProgressError('');
+    try {
+      await api.put(`/student/courses/${courseId}/lessons/${activeLesson.id}/progress`, { completed });
+      queryClient.setQueryData<StudentCourseSections>(
+        ['student', 'course', courseId, 'sections'],
+        (current) => {
+          if (!current) return current;
+          const nextIds = new Set(current.completedLessonIds);
+          if (completed) {
+            nextIds.add(activeLesson.id);
+          } else {
+            nextIds.delete(activeLesson.id);
+          }
+          return { ...current, completedLessonIds: [...nextIds] };
+        },
+      );
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        setProgressError(error.response?.data?.error ?? 'Unable to update lesson progress.');
+        return;
+      }
+      if (error instanceof Error) {
+        setProgressError(error.message);
+      } else {
+        setProgressError('Unable to update lesson progress.');
+      }
+    } finally {
+      setProgressSaving(false);
+    }
+  };
 
   // Select the first lesson (and its first resource) once the curriculum loads.
   useEffect(() => {
@@ -195,47 +275,71 @@ export default function LessonPlayer() {
 
       {isError && (
         <p className="lesson-player__message lesson-player__message--error">
+          <AlertCircle size={18} aria-hidden="true" />
           Unable to load this course. Please refresh and try again.
         </p>
       )}
 
       {isLoading ? (
-        <p className="lesson-player__message">Loading course…</p>
+        <p className="lesson-player__message">
+          <Loader2 size={20} className="lesson-player__spinner" aria-hidden="true" />
+          Loading course…
+        </p>
       ) : allLessons.length === 0 ? (
-        <p className="lesson-player__message">This course does not have any lessons yet.</p>
+        <p className="lesson-player__message">
+          <BookOpen size={20} aria-hidden="true" />
+          This course does not have any lessons yet.
+        </p>
       ) : (
         <div className="lesson-player__body">
-          <button
-            type="button"
-            className="lesson-player__sidebar-toggle"
-            onClick={() => setIsSidebarOpen((prev) => !prev)}
-            aria-expanded={isSidebarOpen}
-            aria-controls="lesson-player-sidebar"
-          >
-            <Menu size={18} aria-hidden="true" /> Course curriculum
-          </button>
+          {isSidebarOpen && (
+            <button
+              type="button"
+              className="lesson-player__sidebar-backdrop"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-label="Close course curriculum"
+            />
+          )}
           <nav
             id="lesson-player-sidebar"
             className={`lesson-player__sidebar${isSidebarOpen ? ' is-open' : ''}`}
             aria-label="Course curriculum"
           >
             <header className="lesson-player__header">
-              <button type="button" className="lesson-player__back" onClick={() => navigate('/student/courses')}>
-                <ArrowLeft size={16} aria-hidden="true" /> Back
-              </button>
-              {courseData?.course && (
-                <div className="lesson-player__course-info">
-                  <h1>{courseData.course.title}</h1>
-                </div>
-              )}
+              <div className="lesson-player__header-main">
+                {courseData?.course && (
+                  <div className="lesson-player__course-info">
+                    <p className="lesson-player__course-label">Course</p>
+                    <h1>{courseData.course.title}</h1>
+                  </div>
+                )}
+                {canTrackProgress && (
+                  <div className="lesson-player__course-progress">
+                    <div className="lesson-player__course-progress-row">
+                      <span>{completedLessonCount} of {allLessons.length} lessons complete</span>
+                      <span className="lesson-player__course-progress-pct">
+                        {allLessons.length > 0 ? Math.round((completedLessonCount / allLessons.length) * 100) : 0}%
+                      </span>
+                    </div>
+                    <progress
+                      value={completedLessonCount}
+                      max={allLessons.length || 1}
+                      aria-label="Course completion progress"
+                    />
+                  </div>
+                )}
+              </div>
               {!isLoading && !hasAccess && (
-                <span className="lesson-player__access-badge">Preview mode — free lessons only</span>
+                <div className="lesson-player__access-badge">
+                  <Lock size={14} aria-hidden="true" />
+                  marka lacagta bixisid ka dib aya heli doontaa casharada
+                </div>
               )}
               <button
                 type="button"
                 className="lesson-player__sidebar-close"
                 onClick={() => setIsSidebarOpen(false)}
-                aria-label="Close course curriculum"
+                aria-label="Close curriculum"
               >
                 <X size={18} aria-hidden="true" />
               </button>
@@ -256,21 +360,42 @@ export default function LessonPlayer() {
                       <ChevronDown size={16} aria-hidden="true" />
                     )}
                     <h2>{section.title}</h2>
+                    <span className="lesson-player__section-count">
+                      {section.lessons.length} {section.lessons.length === 1 ? 'lesson' : 'lessons'}
+                    </span>
                   </button>
                   {!isCollapsed && (
                     <ul>
                       {section.lessons.map((lesson) => (
                         <li key={lesson.id}>
-                          <button
-                            type="button"
-                            className={`lesson-player__lesson-btn${lesson.id === activeLessonId ? ' is-active' : ''}`}
-                            onClick={() => handleSelectLesson(lesson)}
+                          <div
+                            className={`lesson-player__lesson-item${
+                              lesson.id === activeLessonId ? ' is-active' : ''
+                            }${completedLessonIds.has(lesson.id) ? ' is-complete' : ''}`}
                           >
-                            <span>{lesson.title}</span>
-                            {lesson.resources.every((resource) => resource.locked) && lesson.resources.length > 0 && (
-                              <Lock size={14} className="lesson-player__lock" aria-label="Locked" />
-                            )}
-                          </button>
+                            <button
+                              type="button"
+                              className={`lesson-player__lesson-btn${lesson.id === activeLessonId ? ' is-active' : ''}`}
+                              onClick={() => handleSelectLesson(lesson)}
+                            >
+                              {completedLessonIds.has(lesson.id) ? (
+                                <CheckCircle2 size={16} className="lesson-player__lesson-status is-complete" aria-hidden="true" />
+                              ) : (
+                                <span className="lesson-player__lesson-status-dot" aria-hidden="true" />
+                              )}
+                              <span>{lesson.title}</span>
+                              {lesson.resources.every((resource) => resource.locked) && lesson.resources.length > 0 && (
+                                <Lock size={14} className="lesson-player__lock" aria-label="Locked" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              className="lesson-player__lesson-action"
+                              onClick={() => handleSelectLesson(lesson)}
+                            >
+                              {completedLessonIds.has(lesson.id) ? 'Review' : 'Start'}
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -281,6 +406,32 @@ export default function LessonPlayer() {
           </nav>
 
           <section className="lesson-player__content" aria-label="Lesson content">
+            <div className="lesson-player__mobile-actions">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open course curriculum"
+                aria-expanded={isSidebarOpen}
+                aria-controls="lesson-player-sidebar"
+              >
+                <Menu size={20} aria-hidden="true" />
+              </button>
+              {courseData?.course && (
+                <div className="lesson-player__mobile-info">
+                  <strong>{courseData.course.title}</strong>
+                  {canTrackProgress && (
+                    <span>{completedLessonCount}/{allLessons.length} complete</span>
+                  )}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate('/student/courses')}
+                aria-label="Go to courses"
+              >
+                <BookOpen size={20} aria-hidden="true" />
+              </button>
+            </div>
             {activeLesson ? (
               <>
                 <header className="lesson-player__lesson-header">
@@ -291,36 +442,62 @@ export default function LessonPlayer() {
                     <h2>{activeLesson.title}</h2>
                     {activeLesson.description && <p className="lesson-player__description">{activeLesson.description}</p>}
                   </div>
-                  <span className="lesson-player__lesson-progress">
-                    Lesson {allLessons.findIndex((lesson) => lesson.id === activeLesson.id) + 1} of {allLessons.length}
-                  </span>
+                  <div className="lesson-player__lesson-actions">
+                    <span className="lesson-player__lesson-progress">
+                      Lesson {allLessons.findIndex((lesson) => lesson.id === activeLesson.id) + 1} of {allLessons.length}
+                    </span>
+                    {canTrackProgress && (
+                      <button
+                        type="button"
+                        className="lesson-player__complete-btn"
+                        onClick={handleToggleLessonCompletion}
+                        disabled={progressSaving}
+                      >
+                        {progressSaving
+                          ? 'Saving...'
+                          : completedLessonIds.has(activeLesson.id)
+                            ? 'Mark incomplete'
+                            : 'Mark lesson complete'}
+                      </button>
+                    )}
+                  </div>
                 </header>
+
+                {progressError && (
+                  <p className="lesson-player__message lesson-player__message--error" role="alert">
+                    <AlertCircle size={18} aria-hidden="true" />
+                    {progressError}
+                  </p>
+                )}
 
                 {activeLesson.resources.length === 0 ? (
                   <p className="lesson-player__message">No materials have been added to this lesson yet.</p>
                 ) : (
                   <>
-                    <div className="lesson-player__resource-tabs">
-                      {activeLesson.resources.map((resource) => {
-                        const ResourceIcon = resource.type === 'VIDEO' ? Video : resource.type === 'PDF' ? FileText : Link2;
-                        return (
-                          <button
-                            key={resource.id}
-                            type="button"
-                            className={`lesson-player__resource-tab${resource.id === activeResourceId ? ' is-active' : ''}`}
-                            onClick={() => setActiveResourceId(resource.id)}
-                          >
-                            <ResourceIcon size={15} aria-hidden="true" />
-                            {resource.type}
-                            {resource.locked && <Lock size={13} aria-label="Locked" />}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {activeLessonIsLocked && (
+                      <div className="lesson-player__resource-tabs">
+                        {activeLesson.resources.map((resource) => {
+                          const ResourceIcon = resource.type === 'VIDEO' ? Video : resource.type === 'PDF' ? FileText : Link2;
+                          return (
+                            <button
+                              key={resource.id}
+                              type="button"
+                              className={`lesson-player__resource-tab${resource.id === activeResourceId ? ' is-active' : ''}`}
+                              onClick={() => setActiveResourceId(resource.id)}
+                            >
+                              <ResourceIcon size={15} aria-hidden="true" />
+                              {resource.type}
+                              {resource.locked && <Lock size={13} aria-label="Locked" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     <div className="lesson-player__viewer">
                       {!activeResource ? null : activeResource.locked ? (
                         <div className="lesson-player__locked">
+                          <Lock size={28} aria-hidden="true" />
                           <p>This content requires an active subscription.</p>
                           <Link to="/student/courses" className="lesson-player__unlock-link">
                             Browse plans
@@ -363,6 +540,26 @@ export default function LessonPlayer() {
                         <p className="lesson-player__message">This resource has no content yet.</p>
                       )}
                     </div>
+                    {activeResource?.type === 'VIDEO' && (
+                      <nav className="lesson-player__video-navigation" aria-label="Video navigation">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectVideo(activeVideoIndex - 1)}
+                          disabled={activeVideoIndex <= 0}
+                        >
+                          <ChevronLeft size={16} aria-hidden="true" />
+                          Previous video
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectVideo(activeVideoIndex + 1)}
+                          disabled={activeVideoIndex < 0 || activeVideoIndex >= allVideos.length - 1}
+                        >
+                          Next video
+                          <ChevronRight size={16} aria-hidden="true" />
+                        </button>
+                      </nav>
+                    )}
                   </>
                 )}
               </>
