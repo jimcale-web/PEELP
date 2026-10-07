@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { FaWhatsapp } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import '../styles/ApprovalWall.css';
 
 const POLL_INTERVAL_MS = 10000;
+const WHATSAPP_NUMBER = '251714828925';
 
 function homePathFor(role?: string) {
   if (role === 'ADMIN') return '/admin/users';
@@ -54,10 +56,22 @@ export default function PendingApproval() {
         </div>
         <h1>Awaiting Approval</h1>
         <p>
-          Your account has been created and is pending review by an administrator.
-          You'll be able to access the platform once your account is approved.
+          Accountka si guul leh ayaa lo sameeyay  waxa u dhiman ansixinta maamulka.
+          Waxaad awoodi doontaa inaad gasho marka akoonkaaga la ansixiyo.
         </p>
-        <p className="approval-hint">Please check back later or contact your administrator.</p>
+        <p className="approval-hint">Fadlan dib u eeg mar dambe ama la xiriir maamulkaaga.</p>
+        <div>
+          <a
+            className="approval-whatsapp-link"
+            href={`https://wa.me/${WHATSAPP_NUMBER}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Contact us on WhatsApp"
+          >
+            <FaWhatsapp aria-hidden="true" />
+            <span>Contact us on WhatsApp</span>
+          </a>
+        </div>
         <button className="approval-signout-btn" onClick={handleLogout}>
           Sign Out
         </button>

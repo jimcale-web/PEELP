@@ -57,6 +57,31 @@
   color: #aaa !important;
 }
 
+.approval-whatsapp-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #25d366;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.approval-whatsapp-link:hover {
+  background: #1ebe5d;
+}
+
+.approval-whatsapp-link svg {
+  width: 20px;
+  height: 20px;
+}
+
 .approval-signout-btn {
   margin-top: 28px;
   padding: 10px 28px;

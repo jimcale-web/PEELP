@@ -124,7 +124,7 @@ export default function Register() {
     <div className="register-container">
       <div className="register-card">
         <h2>Create Account</h2>
-        <p className="register-subtitle">Join PEELP as a student and start learning today.</p>
+        <p className="register-subtitle">Join us and start learning today.</p>
         {selectedCourseTitle && (
           <p className="register-selected-course">
             Register to enroll in <strong>{selectedCourseTitle}</strong>.
