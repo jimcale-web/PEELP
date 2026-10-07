@@ -5,7 +5,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   preview: {
-    allowedHosts: ['peaceful-emotion-production-d146.up.railway.app'],
+    // Railway's healthcheck doesn't always present the public domain as the
+    // Host header, which made Vite's strict allowlist reject it with a 403
+    // and fail the deploy. The app is only reachable through Railway's edge
+    // proxy for its registered domain(s), so disabling the host check here
+    // is safe.
+    allowedHosts: true,
   },
   test: {
     environment: 'jsdom',
