@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import logo from '../assets/Option 1 · Book & Sunrise@1x.webp';
 import '../styles/Navbar.css';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -22,11 +24,15 @@ export default function Navbar() {
     navigate(lastCourseId ? `/student/course/${lastCourseId}` : '/student/courses');
   };
 
+  if (pathname === '/login') {
+    return null;
+  }
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-brand">
-          <h1>PEACE</h1>
+          <img src={logo} alt="Iftiin Academy" className="navbar-logo" />
         </div>
 
         {/* Desktop menu */}

@@ -72,6 +72,17 @@ interface StudentLesson {
   description: string | null;
   order: number;
   resources: StudentResource[];
+  sectionLocked?: boolean;
+}
+
+interface StudentSectionQuiz {
+  id: string;
+  title: string;
+  passingScore: number;
+  questionCount: number;
+  passed: boolean;
+  bestScore: number | null;
+  attempts: number;
 }
 
 interface StudentSection {
@@ -80,6 +91,8 @@ interface StudentSection {
   description: string | null;
   order: number;
   lessons: StudentLesson[];
+  locked?: boolean;
+  quiz?: StudentSectionQuiz | null;
 }
 
 interface StudentCourseSections {
@@ -136,6 +149,11 @@ export default function LessonPlayer() {
     queryKey: ['student', 'course', courseId, 'sections'],
     queryFn: () => fetchSections(courseId!),
     enabled: !!courseId,
+    // `hasAccess`/`locked` are computed lazily from `accessExpiresAt` on every
+    // request, so re-polling here (instead of only refetching on navigation)
+    // makes the lock take effect as soon as a plan expires, even if the
+    // student already has the player open.
+    refetchInterval: 60_000,
   });
 
   const sections = useMemo(() => sectionsData?.sections ?? [], [sectionsData]);
@@ -152,7 +170,11 @@ export default function LessonPlayer() {
   }, [courseId]);
 
   const allLessons = useMemo(
-    () => sections.flatMap((section) => section.lessons.map((lesson) => ({ ...lesson, sectionTitle: section.title }))),
+    () => sections.flatMap((section) => section.lessons.map((lesson) => ({
+      ...lesson,
+      sectionTitle: section.title,
+      sectionLocked: section.locked ?? false,
+    }))),
     [sections],
   );
   const allVideos = useMemo(
@@ -170,8 +192,10 @@ export default function LessonPlayer() {
     [allLessons, activeLessonId],
   );
   const activeLessonIsLocked = !!activeLesson
-    && activeLesson.resources.length > 0
-    && activeLesson.resources.every((resource) => resource.locked);
+    && (activeLesson.sectionLocked || (
+      activeLesson.resources.length > 0
+      && activeLesson.resources.every((resource) => resource.locked)
+    ));
 
   const activeResource = useMemo(
     () => activeLesson?.resources.find((resource) => resource.id === activeResourceId) ?? null,
@@ -183,7 +207,7 @@ export default function LessonPlayer() {
 
   const handleSelectVideo = (index: number) => {
     const video = allVideos[index];
-    if (!video) {
+    if (!video || video.lesson.sectionLocked) {
       return;
     }
     setActiveLessonId(video.lesson.id);
@@ -192,7 +216,7 @@ export default function LessonPlayer() {
   };
 
   const handleToggleLessonCompletion = async () => {
-    if (!courseId || !activeLesson || !canTrackProgress || progressSaving) {
+    if (!courseId || !activeLesson || activeLesson.sectionLocked || !canTrackProgress || progressSaving) {
       return;
     }
 
@@ -260,6 +284,7 @@ export default function LessonPlayer() {
   };
 
   const handleSelectLesson = (lesson: StudentLesson) => {
+    if (lesson.sectionLocked) return;
     setActiveLessonId(lesson.id);
     setActiveResourceId(lesson.resources[0]?.id ?? null);
     // Close the sidebar on small screens once a lesson is picked so the
@@ -377,6 +402,7 @@ export default function LessonPlayer() {
                               type="button"
                               className={`lesson-player__lesson-btn${lesson.id === activeLessonId ? ' is-active' : ''}`}
                               onClick={() => handleSelectLesson(lesson)}
+                              disabled={section.locked}
                             >
                               {completedLessonIds.has(lesson.id) ? (
                                 <CheckCircle2 size={16} className="lesson-player__lesson-status is-complete" aria-hidden="true" />
@@ -392,6 +418,7 @@ export default function LessonPlayer() {
                               type="button"
                               className="lesson-player__lesson-action"
                               onClick={() => handleSelectLesson(lesson)}
+                              disabled={section.locked}
                             >
                               {completedLessonIds.has(lesson.id) ? 'Review' : 'Start'}
                             </button>
@@ -399,6 +426,27 @@ export default function LessonPlayer() {
                         </li>
                       ))}
                     </ul>
+                  )}
+                  {section.quiz && canTrackProgress && (
+                    <div className="lesson-player__quiz">
+                    {section.locked ? (
+                      <span className="lesson-player__quiz-status">
+                        <Lock size={14} aria-hidden="true" /> Pass the previous section quiz to unlock
+                      </span>
+                    ) : section.lessons.every((lesson) => completedLessonIds.has(lesson.id)) ? (
+                      <Link
+                        className="lesson-player__quiz-link"
+                        to={`/student/course/${courseId}/section/${section.id}/quiz`}
+                      >
+                        {section.quiz.passed ? 'Retake quiz' : 'Take section quiz'}
+                        {section.quiz.passed && <CheckCircle2 size={15} aria-label="Passed" />}
+                      </Link>
+                    ) : (
+                      <span className="lesson-player__quiz-status">
+                        Complete all lessons to unlock {section.quiz.title}
+                      </span>
+                    )}
+                    </div>
                   )}
                 </div>
               );
@@ -451,7 +499,7 @@ export default function LessonPlayer() {
                         type="button"
                         className="lesson-player__complete-btn"
                         onClick={handleToggleLessonCompletion}
-                        disabled={progressSaving}
+                        disabled={progressSaving || activeLesson.sectionLocked}
                       >
                         {progressSaving
                           ? 'Saving...'

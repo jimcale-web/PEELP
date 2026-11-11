@@ -22,22 +22,27 @@ const SECTIONS = [
         title: 'Welcome to PEELP',
         description: 'Learn the basics before moving deeper into the curriculum.',
         order: 1,
+        // The locked (paid) PDF is listed first so it's the lesson's default
+        // active resource, since the resource tabs only render once *every*
+        // resource in a lesson is locked — this lesson mixes a free preview
+        // with a paid resource, so tabs stay hidden and the viewer shows
+        // whichever resource is selected by default.
         resources: [
-          {
-            id: 'resource-1',
-            type: 'VIDEO',
-            url: 'https://example.com/lessons/welcome.mp4',
-            isFree: true,
-            order: 1,
-            locked: false,
-          },
           {
             id: 'resource-2',
             type: 'PDF',
             url: 'https://example.com/lessons/welcome-guide.pdf',
             isFree: false,
-            order: 2,
+            order: 1,
             locked: true,
+          },
+          {
+            id: 'resource-1',
+            type: 'VIDEO',
+            url: 'https://example.com/lessons/welcome.mp4',
+            isFree: true,
+            order: 2,
+            locked: false,
           },
         ],
       },
@@ -93,17 +98,82 @@ test.describe('Lesson Player', () => {
     await page.goto(`/student/course/${COURSE_ID}`);
   });
 
+  // `hasAccess: false` is the same flag whether a student was never approved/
+  // subscribed or their plan has since expired — the backend's lazy expiry
+  // check (`hasActiveAccess`) makes both cases indistinguishable to the
+  // player, so this also covers the "locked on plan expiry" behavior.
   test('renders the course header and locks premium lesson content in preview mode', async ({ page }) => {
     await expect(page.locator('.lesson-player__course-info h1')).toHaveText('Intro to Design');
-    await expect(page.getByText('Preview mode — free lessons only')).toBeVisible();
+    await expect(page.locator('.lesson-player__access-badge')).toBeVisible();
 
     await expect(page.locator('.lesson-player__content h2')).toHaveText('Welcome to PEELP');
-    await expect(page.locator('video.lesson-player__video')).toHaveAttribute('src', 'https://example.com/lessons/welcome.mp4');
+    await expect(page.getByText('This content requires an active subscription.')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Browse plans/i })).toBeVisible();
+  });
 
-    const pdfTab = page.getByRole('button', { name: /PDF/i });
-    await expect(pdfTab).toBeVisible();
-    await pdfTab.click();
+  test('locks lesson content once a previously-active plan expires, same as before approval', async ({ page }) => {
+    let hasAccess = true;
+    // A single, non-free resource so it flips between unlocked/locked purely
+    // based on `hasAccess`, without depending on free-preview resources.
+    const paidOnlySections = [
+      {
+        id: 'section-1',
+        title: 'Getting started',
+        description: 'Set up the essentials.',
+        order: 1,
+        lessons: [
+          {
+            id: 'lesson-1',
+            title: 'Welcome to PEELP',
+            description: null,
+            order: 1,
+            resources: [
+              { id: 'resource-1', type: 'PDF', url: 'https://example.com/lessons/welcome-guide.pdf', isFree: false, order: 1 },
+            ],
+          },
+        ],
+      },
+    ];
 
+    await page.route(`**/api/student/courses/${COURSE_ID}`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ course: COURSE, hasAccess }),
+      });
+    });
+    await page.route(`**/api/student/courses/${COURSE_ID}/sections`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          sections: paidOnlySections.map((section) => ({
+            ...section,
+            lessons: section.lessons.map((lesson) => ({
+              ...lesson,
+              resources: lesson.resources.map((resource) => ({
+                ...resource,
+                url: hasAccess ? resource.url : null,
+                locked: !hasAccess,
+              })),
+            })),
+          })),
+          hasAccess,
+        }),
+      });
+    });
+
+    await page.goto(`/student/course/${COURSE_ID}`);
+    await expect(page.locator('.lesson-player__access-badge')).not.toBeVisible();
+    await expect(page.getByText('This content requires an active subscription.')).not.toBeVisible();
+
+    // Simulate the plan expiring: the access window (`accessExpiresAt`) has
+    // now passed, so the next fetch reports `hasAccess: false` — locking
+    // resources exactly like a student awaiting approval.
+    hasAccess = false;
+    await page.reload();
+
+    await expect(page.locator('.lesson-player__access-badge')).toBeVisible();
     await expect(page.getByText('This content requires an active subscription.')).toBeVisible();
     await expect(page.getByRole('link', { name: /Browse plans/i })).toBeVisible();
   });

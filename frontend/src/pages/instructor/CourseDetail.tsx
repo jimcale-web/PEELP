@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api, { API_ORIGIN } from '../../services/api';
+import SectionQuizBuilder from '../../components/instructor/SectionQuizBuilder';
 import '../../styles/CourseDetail.css';
 
 interface Resource {
@@ -71,13 +72,14 @@ export default function CourseDetail() {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [title, setTitle] = useState('');
+  const [sectionDescription, setSectionDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [showLessonForms, setShowLessonForms] = useState<Record<string, boolean>>({});
-  const [lessonDrafts, setLessonDrafts] = useState<Record<string, { title: string }>>({});
+  const [lessonDrafts, setLessonDrafts] = useState<Record<string, { title: string; description: string }>>({});
   const [lessonErrors, setLessonErrors] = useState<Record<string, string>>({});
   const [showResourceForms, setShowResourceForms] = useState<Record<string, boolean>>({});
   const [resourceDrafts, setResourceDrafts] = useState<Record<string, { type: string; url: string; isFree: boolean }>>({});
@@ -113,9 +115,11 @@ export default function CourseDetail() {
       setSubmitting(true);
       await api.post(`/instructor/courses/${courseId}/sections`, {
         title: title.trim(),
+        description: sectionDescription.trim(),
         order: sections.length,
       });
       setTitle('');
+      setSectionDescription('');
       setShowCreateForm(false);
       await queryClient.invalidateQueries({ queryKey: ['instructor', 'sections', courseId] });
     } catch (err: unknown) {
@@ -155,7 +159,7 @@ export default function CourseDetail() {
   };
 
   const handleCreateLesson = async (sectionId: string) => {
-    const draft = lessonDrafts[sectionId] ?? { title: '' };
+    const draft = lessonDrafts[sectionId] ?? { title: '', description: '' };
     const message = draft.title.trim() ? '' : 'Lesson title is required.';
     setLessonErrors((current) => ({ ...current, [sectionId]: message }));
     if (message) {
@@ -166,9 +170,10 @@ export default function CourseDetail() {
       const sectionLessons = sections.find((section) => section.id === sectionId)?.lessons ?? [];
       await api.post(`/instructor/courses/${courseId}/sections/${sectionId}/lessons`, {
         title: draft.title.trim(),
+        description: draft.description.trim(),
         order: sectionLessons.length,
       });
-      setLessonDrafts((current) => ({ ...current, [sectionId]: { title: '' } }));
+      setLessonDrafts((current) => ({ ...current, [sectionId]: { title: '', description: '' } }));
       setShowLessonForms((current) => ({ ...current, [sectionId]: false }));
       setLessonErrors((current) => ({ ...current, [sectionId]: '' }));
       await queryClient.invalidateQueries({ queryKey: ['instructor', 'sections', courseId] });
@@ -561,6 +566,16 @@ export default function CourseDetail() {
               />
             </div>
 
+            <div className="form-field">
+              <label htmlFor="section-description">Description</label>
+              <textarea
+                id="section-description"
+                value={sectionDescription}
+                onChange={(e) => setSectionDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+
             {error && <div className="form-error">{error}</div>}
 
             <div className="form-actions">
@@ -569,6 +584,8 @@ export default function CourseDetail() {
                 className="cancel-btn"
                 onClick={() => {
                   setShowCreateForm(false);
+                  setTitle('');
+                  setSectionDescription('');
                   setError('');
                 }}
               >
@@ -667,6 +684,22 @@ export default function CourseDetail() {
                                   ...current,
                                   [section.id]: {
                                     title: event.target.value,
+                                    description: current[section.id]?.description ?? '',
+                                  },
+                                }))}
+                              />
+                            </div>
+
+                            <div className="form-field">
+                              <label htmlFor={`lesson-description-${section.id}`}>Lesson Description</label>
+                              <textarea
+                                id={`lesson-description-${section.id}`}
+                                value={lessonDrafts[section.id]?.description ?? ''}
+                                onChange={(event) => setLessonDrafts((current) => ({
+                                  ...current,
+                                  [section.id]: {
+                                    title: current[section.id]?.title ?? '',
+                                    description: event.target.value,
                                   },
                                 }))}
                               />
@@ -680,6 +713,7 @@ export default function CourseDetail() {
                                 className="cancel-btn"
                                 onClick={() => {
                                   setShowLessonForms((current) => ({ ...current, [section.id]: false }));
+                                  setLessonDrafts((current) => ({ ...current, [section.id]: { title: '', description: '' } }));
                                   setLessonErrors((current) => ({ ...current, [section.id]: '' }));
                                 }}
                               >
@@ -848,6 +882,11 @@ export default function CourseDetail() {
                         )}
                       </div>
                     </div>
+                    <SectionQuizBuilder
+                      courseId={courseId}
+                      sectionId={section.id}
+                      sectionTitle={section.title}
+                    />
                     <div className="section-actions">
                       <button
                         type="button"

@@ -85,12 +85,13 @@ test.describe('Post-login state', () => {
     await page.goto('/');
   });
 
-  test("home page shows the authenticated user's name", async ({ page }) => {
-    await expect(page.locator('.user-info strong')).toHaveText(ADMIN_NAME);
+  test("home page shows the authenticated user's name in the navbar", async ({ page }) => {
+    await expect(page.locator('.user-name')).toHaveText(ADMIN_NAME);
   });
 
-  test("home page shows the user's role badge", async ({ page }) => {
-    await expect(page.locator('.role-badge')).toHaveText('ADMIN');
+  test("navbar shows links available to an admin", async ({ page }) => {
+    await expect(page.getByRole('link', { name: 'Admin' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Instructor' })).toBeVisible();
   });
 
   test('navbar is visible after login', async ({ page }) => {
@@ -136,8 +137,8 @@ test.describe('Session persistence', () => {
     await page.goto('/');
     await page.reload();
 
-    await expect(page.locator('.role-badge')).toHaveText('ADMIN');
-    await expect(page.locator('.user-info strong')).toHaveText(ADMIN_NAME);
+    await expect(page.locator('.user-name')).toHaveText(ADMIN_NAME);
+    await expect(page.getByRole('link', { name: 'Admin' })).toBeVisible();
   });
 });
 
@@ -162,13 +163,13 @@ test.describe('Logout', () => {
     await expect(page.locator('nav.navbar')).not.toBeAttached();
   });
 
-  test('visiting / after logout redirects to /login', async ({ page }) => {
+  test('visiting / after logout opens the public home page', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign Out' }).click();
     await page.waitForURL('/login');
 
     await page.goto('/');
-    await page.waitForURL('/login');
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { name: /Learn without limits/ })).toBeVisible();
   });
 
   test('authToken is removed from localStorage after logout', async ({ page }) => {

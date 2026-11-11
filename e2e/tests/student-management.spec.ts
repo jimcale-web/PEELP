@@ -93,6 +93,15 @@ async function assignAccessCategory(page: Page, email: string, categoryName: str
   return row;
 }
 
+/** Opens the "Manage Plan" modal for the row matching `email` and returns the modal locator. */
+async function openManagePlan(page: Page, email: string) {
+  const row = page.getByRole('row', { name: new RegExp(email) });
+  await row.getByRole('button', { name: 'Manage Plan' }).click();
+  const m = modal(page);
+  await expect(m.getByRole('heading', { name: 'Manage Plan' })).toBeVisible();
+  return m;
+}
+
 // ---------------------------------------------------------------------------
 // Page rendering
 // ---------------------------------------------------------------------------
@@ -278,7 +287,7 @@ test.describe('Student Management — approval', () => {
     await gotoStudentManagement(page);
 
     // Filter to pending so the row is easy to find
-    await page.getByRole('combobox').selectOption('PENDING');
+    await page.getByLabel('Filter by approval status').selectOption('PENDING');
 
     const row = page.getByRole('row', { name: new RegExp(email) });
     await expect(row.getByRole('button', { name: '✓ Approve' })).toBeVisible();
@@ -286,7 +295,7 @@ test.describe('Student Management — approval', () => {
     await row.getByRole('button', { name: '✓ Approve' }).click();
 
     // Clear the filter so the now-approved student stays visible
-    await page.getByRole('combobox').selectOption('');
+    await page.getByLabel('Filter by approval status').selectOption('');
 
     // After approval, buttons are replaced by the green pill
     await expect(row.getByRole('button', { name: '✓ Approve' })).not.toBeVisible();
@@ -334,7 +343,7 @@ test.describe('Student Management — approval', () => {
     });
 
     await gotoStudentManagement(page);
-    await page.getByRole('combobox').selectOption('PENDING');
+    await page.getByLabel('Filter by approval status').selectOption('PENDING');
 
     const row = page.getByRole('row', { name: new RegExp(email) });
     await expect(row.getByRole('button', { name: '✕ Reject' })).toBeVisible();
@@ -342,7 +351,7 @@ test.describe('Student Management — approval', () => {
     await row.getByRole('button', { name: '✕ Reject' }).click();
 
     // Clear the filter so the now-rejected student stays visible
-    await page.getByRole('combobox').selectOption('');
+    await page.getByLabel('Filter by approval status').selectOption('');
 
     await expect(row.getByRole('button', { name: '✕ Reject' })).not.toBeVisible();
     await expect(row.getByText('✕ Rejected')).toBeVisible();
@@ -371,18 +380,29 @@ test.describe('Student Management — approval', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Student Management — accessibility duration', () => {
+  test('shows "No active plan" and a Manage Plan button before any access is granted', async ({ page }) => {
+    await gotoStudentManagement(page);
+
+    const email = testEmail('no-plan');
+    await addStudent(page, { name: 'No Plan Student', email });
+
+    const row = page.getByRole('row', { name: new RegExp(email) });
+    await expect(row.getByRole('button', { name: 'Manage Plan' })).toBeVisible();
+    await expect(row.getByText('No active plan')).toBeVisible();
+  });
+
   test('requires a course category before granting access', async ({ page }) => {
     await gotoStudentManagement(page);
 
     const email = testEmail('duration-monthly');
     await addStudent(page, { name: 'Monthly Student', email });
 
-    const row = page.getByRole('row', { name: new RegExp(email) });
-    const monthlyBtn = row.getByRole('button', { name: 'Monthly' });
+    const m = await openManagePlan(page, email);
+    const monthlyBtn = m.getByRole('button', { name: 'Monthly' });
 
     await expect(monthlyBtn).not.toHaveClass(/duration-btn--active/);
     await monthlyBtn.click();
-    await expect(row.getByRole('alert')).toHaveText('Select a course category before granting access.');
+    await expect(m.getByRole('alert')).toHaveText('Select a course category before granting access.');
     await expect(monthlyBtn).not.toHaveClass(/duration-btn--active/);
   });
 
@@ -392,14 +412,15 @@ test.describe('Student Management — accessibility duration', () => {
     const email = testEmail('duration-monthly');
     await addStudent(page, { name: 'Monthly Student', email });
     const categoryName = await createCategoryForAccess(page);
-    const row = await assignAccessCategory(page, email, categoryName);
+    await assignAccessCategory(page, email, categoryName);
 
-    const monthlyBtn = row.getByRole('button', { name: 'Monthly' });
+    const m = await openManagePlan(page, email);
+    const monthlyBtn = m.getByRole('button', { name: 'Monthly' });
     await monthlyBtn.click();
 
-    await expect(row.locator('select.category-select')).toHaveText(categoryName);
+    await expect(m.getByText(categoryName)).toBeVisible();
     await expect(monthlyBtn).toHaveClass(/duration-btn--active/);
-    await expect(row.locator('.duration-expiry')).toContainText('Expires');
+    await expect(m.locator('.plan-expiry')).toContainText('Expires');
   });
 
   test('switching from Monthly to Yearly updates the active button', async ({ page }) => {
@@ -408,10 +429,11 @@ test.describe('Student Management — accessibility duration', () => {
     const email = testEmail('duration-switch');
     await addStudent(page, { name: 'Switch Duration', email });
     const categoryName = await createCategoryForAccess(page);
-    const row = await assignAccessCategory(page, email, categoryName);
+    await assignAccessCategory(page, email, categoryName);
 
-    const monthlyBtn = row.getByRole('button', { name: 'Monthly' });
-    const yearlyBtn = row.getByRole('button', { name: 'Yearly' });
+    const m = await openManagePlan(page, email);
+    const monthlyBtn = m.getByRole('button', { name: 'Monthly' });
+    const yearlyBtn = m.getByRole('button', { name: 'Yearly' });
 
     await monthlyBtn.click();
     await expect(monthlyBtn).toHaveClass(/duration-btn--active/);
@@ -421,18 +443,47 @@ test.describe('Student Management — accessibility duration', () => {
     await expect(monthlyBtn).not.toHaveClass(/duration-btn--active/);
   });
 
-  test('expiry date appears below the toggle after setting duration', async ({ page }) => {
+  test('expiry date and days left appear after setting a duration', async ({ page }) => {
     await gotoStudentManagement(page);
 
     const email = testEmail('expiry-date');
     await addStudent(page, { name: 'Expiry Check', email });
     const categoryName = await createCategoryForAccess(page);
-    const row = await assignAccessCategory(page, email, categoryName);
+    await assignAccessCategory(page, email, categoryName);
 
-    await row.getByRole('button', { name: 'Monthly' }).click();
+    const m = await openManagePlan(page, email);
+    await m.getByRole('button', { name: 'Monthly' }).click();
 
-    await expect(row.locator('.duration-expiry')).toBeVisible();
-    await expect(row.locator('.duration-expiry')).toContainText('Expires');
+    await expect(m.locator('.plan-expiry')).toBeVisible();
+    await expect(m.locator('.plan-expiry')).toContainText('Expires');
+    await expect(m.getByText(/day(s)? left/)).toBeVisible();
+
+    // Scope to `.modal-actions` — the header's "×" button also has an
+    // accessible name of "Close" via its aria-label, so an unscoped lookup
+    // is ambiguous between the two buttons.
+    await m.locator('.modal-actions').getByRole('button', { name: 'Close' }).click();
+    const row = page.getByRole('row', { name: new RegExp(email) });
+    await expect(row.getByText(/day(s)? left/)).toBeVisible();
+  });
+
+  test('Renew is disabled until a plan has been granted, then extends the expiry', async ({ page }) => {
+    await gotoStudentManagement(page);
+
+    const email = testEmail('renew-plan');
+    await addStudent(page, { name: 'Renew Student', email });
+    const categoryName = await createCategoryForAccess(page);
+    await assignAccessCategory(page, email, categoryName);
+
+    const m = await openManagePlan(page, email);
+    const renewBtn = m.getByRole('button', { name: 'Renew' });
+    await expect(renewBtn).toBeDisabled();
+
+    await m.getByRole('button', { name: 'Monthly' }).click();
+    await expect(m.getByRole('button', { name: 'Monthly' })).toHaveClass(/duration-btn--active/);
+    await expect(renewBtn).toBeEnabled();
+
+    await renewBtn.click();
+    await expect(m.locator('.plan-expiry')).toContainText('Expires');
   });
 });
 
@@ -498,12 +549,12 @@ test.describe('Student Management — search and filter', () => {
     });
 
     await gotoStudentManagement(page);
-    await page.getByRole('combobox').selectOption('PENDING');
+    await page.getByLabel('Filter by approval status').selectOption('PENDING');
 
     await expect(page.getByRole('cell', { name: email, exact: true })).toBeVisible();
 
     // An approved student should not be visible
-    await page.getByRole('combobox').selectOption('APPROVED');
+    await page.getByLabel('Filter by approval status').selectOption('APPROVED');
     await expect(page.getByRole('cell', { name: email, exact: true })).not.toBeVisible();
   });
 
@@ -513,10 +564,10 @@ test.describe('Student Management — search and filter', () => {
     const email = testEmail('clear-filter');
     await addStudent(page, { name: 'Clear Filter Student', email });
 
-    await page.getByRole('combobox').selectOption('PENDING');
+    await page.getByLabel('Filter by approval status').selectOption('PENDING');
     await expect(page.getByRole('cell', { name: email, exact: true })).not.toBeVisible();
 
-    await page.getByRole('combobox').selectOption('');
+    await page.getByLabel('Filter by approval status').selectOption('');
     await expect(page.getByRole('cell', { name: email, exact: true })).toBeVisible();
   });
 });

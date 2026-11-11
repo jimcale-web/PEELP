@@ -67,14 +67,14 @@ const AboutPage = () => {
                 />
                 <div className="about-hero__overlay" />
                 <div className="about-hero__content">
-                    <span className="about-hero__badge">Peace Institute</span>
+                    <span className="about-hero__badge">Iftiin academy</span>
                     <h1 className="about-hero__title">
                         Empowering Minds,<br />
                         <span>Shaping Futures</span>
                     </h1>
                     <p className="about-hero__subtitle">
                         We believe education is the most powerful force for positive change.
-                        Discover the story, values, and people behind Peace institute.
+                        Discover the story, values, and people behind iftiin academy.
                     </p>
                 </div>
             </section>
@@ -87,7 +87,7 @@ const AboutPage = () => {
                             <span className="section-label">Who We Are</span>
                             <h2 className="section-title">Built on a Passion for Learning</h2>
                             <p className="section-desc">
-                                Peace institute was founded with a simple but powerful belief — that
+                                iftiin academy was founded with a simple but powerful belief — that
                                 quality education should be accessible to everyone. From our
                                 first cohort to today, we have helped hundreds of students
                                 unlock new skills, careers, and opportunities.
@@ -100,7 +100,7 @@ const AboutPage = () => {
                         </div>
 
                         <div className="about-mission__image-wrap">
-                            <img src={aboutImg} alt="Students learning at Peace institute" />
+                            <img src={aboutImg} alt="Students learning at iftiin academy" />
                             <div className="about-mission__image-badge">
                                 <span className="badge-icon"><Award size={24} color="#2563eb" strokeWidth={2} /></span>
                                 <div className="badge-text">
@@ -142,7 +142,7 @@ const AboutPage = () => {
             <section className="about-section about-section--alt">
                 <div className="about-team">
                     <div className="about-team__header">
-                        <span className="section-label">The People Behind Peace institute</span>
+                        <span className="section-label">The People Behind iftiin academy</span>
                         <h2 className="section-title">Meet Our Team</h2>
                         <p className="section-desc" style={{ margin: "0 auto" }}>
                             Passionate professionals united by a shared commitment to
@@ -174,7 +174,7 @@ const AboutPage = () => {
             <section className="about-cta">
                 <h2 className="about-cta__title">Ready to Start Learning?</h2>
                 <p className="about-cta__subtitle">
-                    Join hundreds of students already growing with Peace institute.
+                    Join hundreds of students already growing with iftiin academy.
                 </p>
                 <Link to="/courses" className="about-cta__btn">
                     Explore Courses →

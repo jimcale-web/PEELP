@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import '../../styles/UserList.css';
 import '../../styles/StudentList.css';
 import CreateStudentModal from '../../components/Admin/CreateStudentModal';
+import ManagePlanModal, { formatPlanStatus } from '../../components/Admin/ManagePlanModal';
 import type { StudentRow } from '../../components/Admin/EditStudentModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -32,9 +33,9 @@ export default function StudentList() {
   const [search, setSearch] = useState('');
   const [approvalFilter, setApprovalFilter] = useState<'' | 'PENDING' | 'APPROVED' | 'REJECTED'>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [savingId, setSavingId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [accessErrorByStudentId, setAccessErrorByStudentId] = useState<Record<string, string>>({});
+  const [managingPlanStudentId, setManagingPlanStudentId] = useState<string | null>(null);
 
   const { data: students = [], isLoading, isError } = useQuery({
     queryKey: ['admin', 'students'],
@@ -61,38 +62,9 @@ export default function StudentList() {
 
   const activeCount = students.filter((s) => !s.deletedAt && s.approvalStatus === 'APPROVED').length;
 
-  async function setDuration(student: StudentRow, duration: 'MONTHLY' | 'YEARLY') {
-    if (savingId === student.id) return;
-    if (!student.enrolledCategoryId) {
-      setAccessErrorByStudentId((errors) => ({
-        ...errors,
-        [student.id]: 'Select a course category before granting access.',
-      }));
-      return;
-    }
-
-    setSavingId(student.id);
-    setAccessErrorByStudentId((errors) => {
-      const remainingErrors = { ...errors };
-      delete remainingErrors[student.id];
-      return remainingErrors;
-    });
-    try {
-      await axios.patch(
-        `${API_URL}/admin/students/${student.id}/access`,
-        { accessDuration: duration, categoryId: student.enrolledCategoryId },
-        { withCredentials: true },
-      );
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
-    } catch (err: unknown) {
-      const message = axios.isAxiosError(err)
-        ? err.response?.data?.error ?? 'Failed to grant access. Please try again.'
-        : 'Failed to grant access. Please try again.';
-      setAccessErrorByStudentId((errors) => ({ ...errors, [student.id]: message }));
-    } finally {
-      setSavingId(null);
-    }
-  }
+  const managingPlanStudent = managingPlanStudentId
+    ? students.find((s) => s.id === managingPlanStudentId) ?? null
+    : null;
 
   async function setApproval(student: StudentRow, status: 'APPROVED' | 'REJECTED') {
     if (approvingId === student.id) return;
@@ -166,6 +138,7 @@ export default function StudentList() {
           />
           <select
             className="role-select"
+            aria-label="Filter by approval status"
             value={approvalFilter}
             onChange={(e) => setApprovalFilter(e.target.value as typeof approvalFilter)}
           >
@@ -271,6 +244,11 @@ export default function StudentList() {
                             <option key={c.id} value={c.id}>{c.name}</option>
                           ))}
                         </select>
+                        {accessErrorByStudentId[s.id] && (
+                          <p className="duration-error" role="alert">
+                            {accessErrorByStudentId[s.id]}
+                          </p>
+                        )}
                       </td>
 
                       {/* Approval column */}
@@ -301,40 +279,17 @@ export default function StudentList() {
                         )}
                       </td>
 
-                      {/* Accessibility Duration column */}
+                      {/* Accessibility Duration column — all plan actions live in the Manage Plan modal */}
                       <td className="duration-cell">
-                        <div className="duration-toggle" aria-label="Accessibility duration">
-                          <button
-                            className={`duration-btn ${s.accessDuration === 'MONTHLY' ? 'duration-btn--active' : ''}`}
-                            onClick={() => setDuration(s, 'MONTHLY')}
-                            disabled={savingId === s.id}
-                            title={s.accessDuration === 'MONTHLY' && s.accessExpiresAt
-                              ? `Expires ${new Date(s.accessExpiresAt).toLocaleDateString()}`
-                              : 'Set monthly access'}
-                          >
-                            Monthly
-                          </button>
-                          <button
-                            className={`duration-btn ${s.accessDuration === 'YEARLY' ? 'duration-btn--active duration-btn--yearly' : ''}`}
-                            onClick={() => setDuration(s, 'YEARLY')}
-                            disabled={savingId === s.id}
-                            title={s.accessDuration === 'YEARLY' && s.accessExpiresAt
-                              ? `Expires ${new Date(s.accessExpiresAt).toLocaleDateString()}`
-                              : 'Set yearly access'}
-                          >
-                            Yearly
-                          </button>
+                        <button
+                          className="btn-manage-plan"
+                          onClick={() => setManagingPlanStudentId(s.id)}
+                        >
+                          Manage Plan
+                        </button>
+                        <div className={`plan-status-text ${s.accessExpiresAt && (new Date(s.accessExpiresAt).getTime() > Date.now()) ? 'plan-status--active' : 'plan-status--expired'}`}>
+                          {formatPlanStatus(s.accessExpiresAt)}
                         </div>
-                        {s.accessExpiresAt && (
-                          <div className="duration-expiry">
-                            Expires {new Date(s.accessExpiresAt).toLocaleDateString()}
-                          </div>
-                        )}
-                        {accessErrorByStudentId[s.id] && (
-                          <p className="duration-error" role="alert">
-                            {accessErrorByStudentId[s.id]}
-                          </p>
-                        )}
                       </td>
                     </tr>
                   ))
@@ -342,6 +297,13 @@ export default function StudentList() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {managingPlanStudent && (
+          <ManagePlanModal
+            student={managingPlanStudent}
+            onClose={() => setManagingPlanStudentId(null)}
+          />
         )}
       </div>
     </div>
