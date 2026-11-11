@@ -355,9 +355,9 @@ export default function LessonPlayer() {
                 )}
               </div>
               {!isLoading && !hasAccess && (
-                <div className="lesson-player__access-badge">
+                <div className="lesson-player__access-badge" role="status" aria-live="polite">
                   <Lock size={14} aria-hidden="true" />
-                  marka lacagta bixisid ka dib aya heli doontaa casharada
+                  Preview access requires an active subscription.
                 </div>
               )}
               <button
@@ -401,7 +401,7 @@ export default function LessonPlayer() {
                             <button
                               type="button"
                               className={`lesson-player__lesson-btn${lesson.id === activeLessonId ? ' is-active' : ''}`}
-                              onClick={() => handleSelectLesson(lesson)}
+                              onClick={() => handleSelectLesson({ ...lesson, sectionLocked: section.locked ?? false })}
                               disabled={section.locked}
                             >
                               {completedLessonIds.has(lesson.id) ? (
@@ -417,7 +417,7 @@ export default function LessonPlayer() {
                             <button
                               type="button"
                               className="lesson-player__lesson-action"
-                              onClick={() => handleSelectLesson(lesson)}
+                              onClick={() => handleSelectLesson({ ...lesson, sectionLocked: section.locked ?? false })}
                               disabled={section.locked}
                             >
                               {completedLessonIds.has(lesson.id) ? 'Review' : 'Start'}

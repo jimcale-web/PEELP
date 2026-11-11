@@ -56,10 +56,10 @@ export default function PendingApproval() {
         </div>
         <h1>Awaiting Approval</h1>
         <p>
-          Accountka si guul leh ayaa lo sameeyay  waxa u dhiman ansixinta maamulka.
-          Waxaad awoodi doontaa inaad gasho marka akoonkaaga la ansixiyo.
+          Your account was created successfully and is waiting for admin approval.
+          You will be able to sign in once your account has been approved.
         </p>
-        <p className="approval-hint">Fadlan dib u eeg mar dambe ama la xiriir maamulkaaga.</p>
+        <p className="approval-hint">Please check back later or contact your administrator.</p>
 
         <a
           className="approval-whatsapp-link"
