@@ -6,7 +6,7 @@ import api from '../services/api';
 import '../styles/ApprovalWall.css';
 
 const POLL_INTERVAL_MS = 10000;
-const WHATSAPP_NUMBER = '251714828925';
+const WHATSAPP_NUMBER = '251905525072';
 
 function homePathFor(role?: string) {
   if (role === 'ADMIN') return '/admin/users';
@@ -60,21 +60,27 @@ export default function PendingApproval() {
           Waxaad awoodi doontaa inaad gasho marka akoonkaaga la ansixiyo.
         </p>
         <p className="approval-hint">Fadlan dib u eeg mar dambe ama la xiriir maamulkaaga.</p>
+
+        <a
+          className="approval-whatsapp-link"
+          href={`https://wa.me/${WHATSAPP_NUMBER}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Contact us on WhatsApp"
+        >
+          <FaWhatsapp aria-hidden="true" />
+          <span>Contact us on WhatsApp</span>
+        </a>
+
         <div>
-          <a
-            className="approval-whatsapp-link"
-            href={`https://wa.me/${WHATSAPP_NUMBER}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Contact us on WhatsApp"
-          >
-            <FaWhatsapp aria-hidden="true" />
-            <span>Contact us on WhatsApp</span>
-          </a>
+
+          <button className="approval-signout-btn" onClick={handleLogout}>
+            Sign Out
+          </button>
+
         </div>
-        <button className="approval-signout-btn" onClick={handleLogout}>
-          Sign Out
-        </button>
+
+
       </div>
     </div>
   );
